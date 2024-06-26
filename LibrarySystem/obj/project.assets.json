@@ -2251,19 +2251,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\Ganidu.Abeysekara.THECONTENTGROUP\\.nuget\\packages\\": {}
+    "C:\\Users\\saiyaf.suhair\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Ganidu\\LibrarySystem\\LibrarySystem\\LibrarySystem.csproj",
+      "projectUniqueName": "C:\\Users\\saiyaf.suhair\\Documents\\GitHub\\LibrarySystem\\LibrarySystem\\LibrarySystem.csproj",
       "projectName": "LibrarySystem",
-      "projectPath": "D:\\Ganidu\\LibrarySystem\\LibrarySystem\\LibrarySystem.csproj",
-      "packagesPath": "C:\\Users\\Ganidu.Abeysekara.THECONTENTGROUP\\.nuget\\packages\\",
-      "outputPath": "D:\\Ganidu\\LibrarySystem\\LibrarySystem\\obj\\",
+      "projectPath": "C:\\Users\\saiyaf.suhair\\Documents\\GitHub\\LibrarySystem\\LibrarySystem\\LibrarySystem.csproj",
+      "packagesPath": "C:\\Users\\saiyaf.suhair\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\saiyaf.suhair\\Documents\\GitHub\\LibrarySystem\\LibrarySystem\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\Ganidu.Abeysekara.THECONTENTGROUP\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\saiyaf.suhair\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
       "originalTargetFrameworks": [
@@ -2341,7 +2341,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\7.0.202\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.101\\RuntimeIdentifierGraph.json"
       }
     }
   }
