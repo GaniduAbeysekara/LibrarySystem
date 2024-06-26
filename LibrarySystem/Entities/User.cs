@@ -3,6 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LibrarySystem.Entities
 {
+    
     public class User
     {
         [Key]
