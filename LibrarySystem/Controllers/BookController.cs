@@ -29,6 +29,26 @@ namespace LibrarySystem.Controllers
         //get book by author name
 
         //create book details
+        [HttpPost]
+        public async Task<IActionResult> Create([FromBody] Book book)
+        {
+            if (book == null)
+            {
+                return BadRequest();
+            }
+
+            var newBook = new Book
+            {
+                ISBN = book.ISBN,
+                BookTitle = book.BookTitle,
+                Author = book.Author,
+            };
+
+            _dataContext.Books.Add(newBook);
+            await _dataContext.SaveChangesAsync();
+
+            return Ok(newBook);
+        }
 
         //delete book
 
