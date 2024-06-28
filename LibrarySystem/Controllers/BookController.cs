@@ -16,7 +16,7 @@ namespace LibrarySystem.Controllers
         }
 
         [HttpGet("{isbn}")]
-        public async Task<IActionResult> Get(string isbn)
+        public async Task<IActionResult> GetBookByISBN(string isbn)
         {
             var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
             if (book == null)
@@ -27,6 +27,17 @@ namespace LibrarySystem.Controllers
         }
 
         //get book by author name
+        [HttpGet("author/{author}")]
+        public async Task<IActionResult> GetBooksByAuthor(string author)
+        {
+            var books = await _dataContext.Books.Where(u => u.Author == author).ToListAsync();
+            if (books == null || books.Count == 0)
+            {
+                return NotFound();
+            }
+            return Ok(books);
+        }
+
 
         //create book details
         [HttpPost]
@@ -51,8 +62,35 @@ namespace LibrarySystem.Controllers
         }
 
         //delete book
+        [HttpDelete("{isbn}")]
+        public async Task<IActionResult> Delete(string isbn)
+        {
+            var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
+            if (book == null)
+            {
+                return NotFound();
+            }
+
+            _dataContext.Books.Remove(book);
+            await _dataContext.SaveChangesAsync();
+            return NoContent();
+        }
 
         //edit book details
+        [HttpPut("{isbn}")]
+        public async Task<IActionResult> Edit(string isbn, [FromBody] Book updatedBook)
+        {
+            var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
+            if (book == null)
+            {
+                return NotFound();
+            }
 
+            book.BookTitle = updatedBook.BookTitle;
+            book.Author = updatedBook.Author;
+
+            await _dataContext.SaveChangesAsync();
+            return NoContent();
+        }
     }
 }
