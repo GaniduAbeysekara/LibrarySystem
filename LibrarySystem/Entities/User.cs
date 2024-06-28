@@ -6,12 +6,13 @@ namespace LibrarySystem.Entities
     
     public class User
     {
-        [Key]
+        
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public int Id { get; set; }
+        public int UserId { get; set; }
 
         [Required]
         [MaxLength(100)]
+        [Key]
         public string UserName { get; set; } = string.Empty;
 
         [Required]
@@ -23,8 +24,8 @@ namespace LibrarySystem.Entities
         public string Password { get; set; } = string.Empty;
 
         [Required]
-        [MaxLength(5)]
-        public int UserType { get; set; }
+        [MaxLength(50)]
+        public string PhonneNumber { get; set; } = string.Empty;
 
 
     }

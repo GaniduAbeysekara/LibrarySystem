@@ -13,6 +13,6 @@ namespace LibrarySystem.Model
         
         public string Password { get; set; } = string.Empty;
 
-        public string PhoneNo { get; set; } = string.Empty;
+        public string PhonneNumber { get; set; } = string.Empty;
     }
 }

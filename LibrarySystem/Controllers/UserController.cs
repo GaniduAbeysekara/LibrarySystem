@@ -1,4 +1,5 @@
-﻿using LibrarySystem.DbContexts;
+﻿using AutoMapper;
+using LibrarySystem.DbContexts;
 using LibrarySystem.Entities;
 using LibrarySystem.Model;
 using Microsoft.AspNetCore.Mvc;
@@ -12,39 +13,85 @@ namespace LibrarySystem.Controllers
     {
 
         private DataContext _dataContext;
+        private IMapper _mapper;
         public UserController(DataContext dataContext)
         {
             _dataContext = dataContext;
+
+            _mapper = new Mapper(new MapperConfiguration(cfg => {
+                cfg.CreateMap<UserDetail, User>();
+            }));
         }
 
         [HttpGet("{userName}")]
-        public async Task<IActionResult> Get(string userName)
+        public async Task<IActionResult> GetUser(string userName)
         {
         var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.UserName == userName);
-            if (user == null) { 
-            return NotFound();
+            if (user == null) 
+            { 
+                return NotFound();
             }
           return Ok(user);
         }
 
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] UserDetail userDetail )
+        [HttpPost("AddUser")]
+        public async Task<IActionResult> CreateUser([FromBody] UserDetail userDetail )
         {
             if (userDetail == null) {
                 return BadRequest();
             }
-            var user = new User();
-            user.UserName = userDetail.UserName;
-            user.Email = userDetail.Email;
-            user.Password = userDetail.Password;
-            user.UserType = 1;
-            _dataContext.Users.Add(user);
+            User userDb = _mapper.Map<User>(userDetail);
+            //var user = new User();
+            //user.UserName = userDetail.UserName;
+            //user.Email = userDetail.Email;
+            //user.Password = userDetail.Password;
+            //user.PhonneNumber = userDetail.PhonneNumber;
+            _dataContext.Users.Add(userDb);
             await _dataContext.SaveChangesAsync();
 
-            return Ok(user);
+            return Ok(userDb);
+        }
 
 
+        [HttpPut("EditUser")]
+        public async Task<IActionResult> EditUser(UserDetail user)
+        {
+            var userDb = await _dataContext.Users.FirstOrDefaultAsync(u => u.UserName == user.UserName);
+
+            if (userDb != null)
+            {
+                userDb.Email = user.Email;
+                userDb.PhonneNumber = user.PhonneNumber;
+                if (_dataContext.SaveChanges() > 0)
+                {
+                    return Ok(userDb);
+                }
+
+                throw new Exception("Failed to Update User");
+            }
+
+            throw new Exception("Failed to Get User");
+        }
+
+
+        [HttpDelete("DeleteUser")]
+        public async Task<IActionResult> DeleteUser(string userName)
+        {
+            var userDb = await _dataContext.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+
+            if (userDb != null)
+            {
+                _dataContext.Users.Remove(userDb);
+                if (_dataContext.SaveChanges() > 0)
+                {
+                    return Ok();
+                }
+
+                throw new Exception("Failed to Delete User");
+            }
+
+            throw new Exception("Failed to Get User");
         }
 
 
