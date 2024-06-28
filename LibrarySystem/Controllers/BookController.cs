@@ -16,7 +16,7 @@ namespace LibrarySystem.Controllers
         }
 
         [HttpGet("{isbn}")]
-        public async Task<IActionResult> Get(string isbn)
+        public async Task<IActionResult> GetBookByISBN(string isbn)
         {
             var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
             if (book == null)
@@ -27,6 +27,17 @@ namespace LibrarySystem.Controllers
         }
 
         //get book by author name
+        [HttpGet("author/{author}")]
+        public async Task<IActionResult> GetBookByAuthor(string author)
+        {
+            var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.Author == author);
+            if (book == null)
+            {
+                return NotFound();
+            }
+            return Ok(book);
+        }
+
 
         //create book details
         [HttpPost]
