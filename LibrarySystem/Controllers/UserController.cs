@@ -2,6 +2,8 @@
 using LibrarySystem.DbContexts;
 using LibrarySystem.Entities;
 using LibrarySystem.Model;
+using LibrarySystem.Repository.Infrastructure;
+using LibrarySystem.Repository.Interface;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,12 +13,11 @@ namespace LibrarySystem.Controllers
     [Route("api/[controller]")]
     public class UserController:ControllerBase
     {
-
-        private DataContext _dataContext;
+        private IUserRepository _userRepository;
         private IMapper _mapper;
-        public UserController(DataContext dataContext)
+        public UserController( IUserRepository userRepository)
         {
-            _dataContext = dataContext;
+            _userRepository = userRepository;
 
             _mapper = new Mapper(new MapperConfiguration(cfg => {
                 cfg.CreateMap<UserDetail, User>();
@@ -24,74 +25,55 @@ namespace LibrarySystem.Controllers
         }
 
         [HttpGet("{userName}")]
-        public async Task<IActionResult> GetUser(string userName)
+        public User GetUser(string userName)
         {
-        var user = await _dataContext.Users.FirstOrDefaultAsync(u => u.UserName == userName);
-            if (user == null) 
-            { 
-                return NotFound();
-            }
-          return Ok(user);
+            return _userRepository.GetSingleUser(userName);
+
         }
 
 
         [HttpPost("AddUser")]
-        public async Task<IActionResult> CreateUser([FromBody] UserDetail userDetail )
+        public IActionResult CreateUser([FromBody] UserDetail userDetail )
         {
             if (userDetail == null) {
                 return BadRequest();
             }
             User userDb = _mapper.Map<User>(userDetail);
-            //var user = new User();
-            //user.UserName = userDetail.UserName;
-            //user.Email = userDetail.Email;
-            //user.Password = userDetail.Password;
-            //user.PhonneNumber = userDetail.PhonneNumber;
-            _dataContext.Users.Add(userDb);
-            await _dataContext.SaveChangesAsync();
+            _userRepository.AddEntity<User>(userDb);
+            _userRepository.SaveChangers();
 
             return Ok(userDb);
         }
 
 
         [HttpPut("EditUser")]
-        public async Task<IActionResult> EditUser(UserDetail user)
+        public IActionResult EditUser(UserDetail user)
         {
-            var userDb = await _dataContext.Users.FirstOrDefaultAsync(u => u.UserName == user.UserName);
+            var userDb = _userRepository.GetSingleUser(user.UserName);
 
-            if (userDb != null)
+            userDb.Email = user.Email;
+            userDb.PhonneNumber = user.PhonneNumber;
+            if (_userRepository.SaveChangers())
             {
-                userDb.Email = user.Email;
-                userDb.PhonneNumber = user.PhonneNumber;
-                if (_dataContext.SaveChanges() > 0)
-                {
-                    return Ok(userDb);
-                }
-
-                throw new Exception("Failed to Update User");
+                return Ok(userDb);
             }
 
-            throw new Exception("Failed to Get User");
+            throw new Exception("Failed to Update User");
         }
 
 
         [HttpDelete("DeleteUser")]
-        public async Task<IActionResult> DeleteUser(string userName)
+        public IActionResult DeleteUser(string userName)
         {
-            var userDb = await _dataContext.Users.FirstOrDefaultAsync(u => u.UserName == userName);
+            var userDb = _userRepository.GetSingleUser(userName);
 
-            if (userDb != null)
-            {
-                _dataContext.Users.Remove(userDb);
-                if (_dataContext.SaveChanges() > 0)
+                _userRepository.RemoveEntity<User>(userDb);
+                if (_userRepository.SaveChangers())
                 {
                     return Ok();
                 }
 
                 throw new Exception("Failed to Delete User");
-            }
-
-            throw new Exception("Failed to Get User");
         }
 
 
