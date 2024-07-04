@@ -10,23 +10,26 @@ namespace LibrarySystem.Entities
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int UserId { get; set; }
 
-        [Required]
-        [MaxLength(100)]
         [Key]
-        public string UserName { get; set; } = string.Empty;
-
         [Required]
         [MaxLength(100)]
         public string Email { get; set; } = string.Empty;
+        
+        [Required]
+        [MaxLength(100)]
+        public string FirstName { get; set; } = string.Empty;
 
         [Required]
-        [MaxLength(50)]
-        public string Password { get; set; } = string.Empty;
+        [MaxLength(100)]
+        public string LastName { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(10)]
+        public string Gender { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(50)]
         public string PhonneNumber { get; set; } = string.Empty;
-
 
     }
 }

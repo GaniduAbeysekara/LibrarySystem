@@ -5,7 +5,7 @@ using LibrarySystem.Repository.Interface;
 
 namespace LibrarySystem.Repository.Infrastructure
 {
-    public class UserRepository:IUserRepository
+    public class UserRepository : IUserRepository
     {
         private DataContext _dataContext;
         public UserRepository(DataContext dataContext)
@@ -30,7 +30,6 @@ namespace LibrarySystem.Repository.Infrastructure
             }
         }
 
-
         public void RemoveEntity<T>(T entityToAdd)
         {
             if (entityToAdd != null)
@@ -39,33 +38,17 @@ namespace LibrarySystem.Repository.Infrastructure
             }
         }
 
-        public User GetSingleUser(string userName)
+        public Auth GetAuthByEmail(string email)
         {
-            User? user = _dataContext.Users
-                .Where(u => u.UserName == userName)
-                .FirstOrDefault<User>();
-
-            if (user != null)
-            {
-                return user;
-            }
-
-            throw new Exception("There is not user as " + userName);
-
+            Auth? auth = _dataContext.Auth.Where(a => a.Email == email).FirstOrDefault<Auth>();
+            return auth;
         }
 
-
-
-
-
-
-
-
-
-
-
-
-
+        public User GetUserByEmail(string email)
+        {
+            User? user = _dataContext.User.Where(u => u.Email == email).FirstOrDefault<User>();
+            return user;
+        }
 
 
     }
