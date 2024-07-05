@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace LibrarySystem.Model
+namespace LibrarySystem.Web.API.Model
 {
     public class UserForEdit
     {

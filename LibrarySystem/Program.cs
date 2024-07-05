@@ -1,6 +1,6 @@
-using LibrarySystem.DbContexts;
-using LibrarySystem.Repository.Infrastructure;
-using LibrarySystem.Repository.Interface;
+using LibrarySystem.Data.DbContexts;
+using LibrarySystem.Data.Repository.Infrastructure;
+using LibrarySystem.Data.Repository.Interface;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);

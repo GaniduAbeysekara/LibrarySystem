@@ -1,9 +1,9 @@
-﻿using LibrarySystem.DbContexts;
-using LibrarySystem.Entities;
+﻿using LibrarySystem.Data.DbContexts;
+using LibrarySystem.Data.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace LibrarySystem.Controllers
+namespace LibrarySystem.Web.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]

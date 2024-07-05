@@ -1,21 +1,13 @@
-using System.Data;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Cryptography;
-using System.Text;
 using AutoMapper;
-using LibrarySystem.DbContexts;
-using LibrarySystem.Entities;
-using LibrarySystem.Model;
-using LibrarySystem.Repository.Infrastructure;
-using LibrarySystem.Repository.Interface;
-using Microsoft.AspNetCore.Authorization;
+using LibrarySystem.Data.Entities;
+using LibrarySystem.Data.Repository.Interface;
+using LibrarySystem.Web.API.Model;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Data.SqlClient;
-using Microsoft.IdentityModel.Tokens;
+using System.Security.Cryptography;
+using System.Text;
 
-namespace LibrarySystem.Controllers
+namespace LibrarySystem.Web.API.Controllers
 {
     [ApiController]
     [Route("[controller]")]
@@ -94,7 +86,7 @@ namespace LibrarySystem.Controllers
         {
             Auth userForConfirmation = _userRepository.GetAuthByEmail(userForLogin.Email);
 
-            if(userForConfirmation.PasswordHash != null)
+            if(userForConfirmation.PasswordHash != null && userForConfirmation.PasswordSalt != null)
             {
                 byte[] passwordHash = GetPasswordHash(userForLogin.Password, userForConfirmation.PasswordSalt);
 

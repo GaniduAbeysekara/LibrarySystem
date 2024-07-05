@@ -1,12 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace LibrarySystem.Entities
+namespace LibrarySystem.Data.Entities
 {
     public class Book
     {
         [Key]
-        public string ISBN { get; set; }
+        public string ISBN { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(100)]
