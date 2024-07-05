@@ -16,12 +16,7 @@ namespace LibrarySystem.Repository.Infrastructure
         {
             return _dataContext.SaveChanges() > 0;
         }
-
-        public async void SaveChangesAsync()
-        {
-            await _dataContext.SaveChangesAsync();
-        }
-
+        
         public void AddEntity<T>(T entityToAdd)
         {
             if (entityToAdd != null)
@@ -46,7 +41,7 @@ namespace LibrarySystem.Repository.Infrastructure
 
         public User GetUserByEmail(string email)
         {
-            User? user = _dataContext.User.Where(u => u.Email == email).FirstOrDefault<User>();
+            User? user = _dataContext.Users.Where(u => u.Email == email).FirstOrDefault<User>();
             return user;
         }
 
