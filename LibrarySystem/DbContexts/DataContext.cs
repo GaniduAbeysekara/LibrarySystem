@@ -10,5 +10,8 @@ namespace LibrarySystem.DbContexts
         public DbSet<User> Users => Set<User>();
         public DbSet<Auth> Auth => Set<Auth>();
        
+        
+        public DbSet<Book> Books => Set<Book>();
+
     }
 }
