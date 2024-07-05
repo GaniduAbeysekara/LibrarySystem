@@ -7,7 +7,10 @@ namespace LibrarySystem.DbContexts
     {
         public DataContext(DbContextOptions options) :base(options) { }
 
-        public DbSet<User> Users => Set<User>();
+        public DbSet<User> User => Set<User>();
+        public DbSet<Auth> Auth => Set<Auth>();
+       
+        
         public DbSet<Book> Books => Set<Book>();
 
     }
