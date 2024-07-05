@@ -2,6 +2,7 @@
 using LibrarySystem.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace LibrarySystem.Controllers
 {
@@ -13,6 +14,55 @@ namespace LibrarySystem.Controllers
         public BookController(DataContext dataContext)
         {
             _dataContext = dataContext;
+        }
+
+        // get all books
+        [HttpGet]
+        public async Task<IActionResult> GetAllBooks()
+        {
+            try
+            {
+                var books = await _dataContext.Books.ToListAsync();
+                if (books == null || !books.Any())
+                {
+                    return Ok("No books available.");
+                }
+                return Ok(books);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal server error. Please try again later.");
+            }
+        }
+
+        // search books by book name or author name
+        [HttpGet("search")]
+        public async Task<IActionResult> SearchBooks([Required] string keyword)
+        {
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                return BadRequest("Keyword cannot be null or empty.");
+            }
+
+            try
+            {
+                var books = await _dataContext.Books
+                    .Where(b => b.BookTitle.Contains(keyword) || b.Author.Contains(keyword))
+                    .ToListAsync();
+
+                if (books == null || !books.Any())
+                {
+                    return NotFound("No books found matching the keyword.");
+                }
+
+                return Ok(books);
+            }
+            catch (Exception ex)
+            {
+                // Log the exception
+                // _logger.LogError(ex, "Error searching books with keyword: {keyword}", keyword);
+                return StatusCode(500, "Internal server error. Please try again later.");
+            }
         }
 
         [HttpGet("{isbn}")]
