@@ -2,13 +2,18 @@ using AutoMapper;
 using LibrarySystem.Data.Entities;
 using LibrarySystem.Data.Repository.Interface;
 using LibrarySystem.Web.API.Model;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace LibrarySystem.Web.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("[controller]")]
     public class AuthController : ControllerBase
@@ -29,6 +34,7 @@ namespace LibrarySystem.Web.API.Controllers
 
 
         [HttpGet("{email}")]
+
         public User GetUser(string email)
         {
             User user = _userRepository.GetUserByEmail(email);
@@ -41,6 +47,7 @@ namespace LibrarySystem.Web.API.Controllers
 
         }
 
+        [AllowAnonymous]
         [HttpPost("Register")]
         public IActionResult Register(UserForRegistrationDto userForRegistration)
         {
@@ -81,6 +88,7 @@ namespace LibrarySystem.Web.API.Controllers
             return StatusCode(500, "Passwords do not match!");
         }
 
+        [AllowAnonymous]
         [HttpPost("Login")]
         public IActionResult Login(UserForLoginDto userForLogin)
         {
@@ -98,7 +106,9 @@ namespace LibrarySystem.Web.API.Controllers
                     }
                 }
             }
-                return Ok();
+            return Ok(new Dictionary<string, string> {
+                {"token", CreateToken(userForLogin.Email)}
+            });
         }
 
         [HttpPut("EditUser")]
@@ -151,6 +161,40 @@ namespace LibrarySystem.Web.API.Controllers
                 iterationCount: 1000000,
                 numBytesRequested: 256 / 8
             );
+        }
+
+        private string CreateToken(string email)
+        {
+            Claim[] claims = new Claim[] {
+                new Claim("email", email)
+            };
+
+            string? tokenKeyString = _config.GetSection("AppSettings:TokenKey").Value;
+
+            SymmetricSecurityKey tokenKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(
+                        tokenKeyString != null ? tokenKeyString : ""
+                    )
+                );
+
+            SigningCredentials credentials = new SigningCredentials(
+                    tokenKey,
+                    SecurityAlgorithms.HmacSha512Signature
+                );
+
+            SecurityTokenDescriptor descriptor = new SecurityTokenDescriptor()
+            {
+                Subject = new ClaimsIdentity(claims),
+                SigningCredentials = credentials,
+                Expires = DateTime.Now.AddHours(1)
+            };
+
+            JwtSecurityTokenHandler tokenHandler = new JwtSecurityTokenHandler();
+
+            SecurityToken token = tokenHandler.CreateToken(descriptor);
+
+            return tokenHandler.WriteToken(token);
+
         }
 
     }

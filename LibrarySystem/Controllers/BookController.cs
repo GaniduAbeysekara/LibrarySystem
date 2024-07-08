@@ -1,10 +1,12 @@
 ﻿using LibrarySystem.Data.DbContexts;
 using LibrarySystem.Data.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace LibrarySystem.Web.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class BookController : ControllerBase
