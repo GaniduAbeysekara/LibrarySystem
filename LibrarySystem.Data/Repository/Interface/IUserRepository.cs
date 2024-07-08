@@ -1,6 +1,6 @@
-﻿using LibrarySystem.Entities;
+﻿using LibrarySystem.Data.Entities;
 
-namespace LibrarySystem.Repository.Interface
+namespace LibrarySystem.Data.Repository.Interface
 {
     public interface IUserRepository
     {

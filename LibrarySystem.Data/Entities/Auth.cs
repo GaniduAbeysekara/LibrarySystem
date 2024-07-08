@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
-namespace LibrarySystem.Entities
+namespace LibrarySystem.Data.Entities
 {
     public class Auth
     {

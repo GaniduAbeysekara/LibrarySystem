@@ -1,9 +1,9 @@
 ﻿using AutoMapper;
-using LibrarySystem.DbContexts;
-using LibrarySystem.Entities;
-using LibrarySystem.Repository.Interface;
+using LibrarySystem.Data.DbContexts;
+using LibrarySystem.Data.Entities;
+using LibrarySystem.Data.Repository.Interface;
 
-namespace LibrarySystem.Repository.Infrastructure
+namespace LibrarySystem.Data.Repository.Infrastructure
 {
     public class UserRepository : IUserRepository
     {

@@ -1,4 +1,4 @@
-﻿namespace LibrarySystem.Model
+﻿namespace LibrarySystem.Web.API.Model
 {
     public class UserForLoginDto
     {

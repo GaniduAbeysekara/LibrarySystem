@@ -1,11 +1,13 @@
-﻿using LibrarySystem.DbContexts;
-using LibrarySystem.Entities;
+﻿using LibrarySystem.Data.DbContexts;
+using LibrarySystem.Data.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
-namespace LibrarySystem.Controllers
+namespace LibrarySystem.Web.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class BookController : ControllerBase
