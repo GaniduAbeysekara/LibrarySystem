@@ -10,6 +10,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace LibrarySystem.Web.API.Controllers
 {
@@ -37,56 +38,70 @@ namespace LibrarySystem.Web.API.Controllers
 
         public User GetUser(string email)
         {
-            User user = _userRepository.GetUserByEmail(email);
-            if (user != null)
+            //bool isValidEmail = IsValidEmail(email);
+            if (IsValidEmail(email))
             {
-                return user;   
-            
+                User user = _userRepository.GetUserByEmail(email);
+                if (user != null)
+                {
+                    return user;
+
+                }
             }
+
             throw new Exception("There is not email as " + email);
 
         }
+
 
         [AllowAnonymous]
         [HttpPost("Register")]
         public IActionResult Register(UserForRegistrationDto userForRegistration)
         {
-            if (userForRegistration.Password == userForRegistration.PasswordConfirm)
+            bool isValidEmail = IsValidEmail(userForRegistration.Email);
+            bool isValidPhoneNum = IsValidPhoneNo(userForRegistration.PhonneNumber);
+
+            if (isValidEmail && isValidPhoneNum)
             {
-                User existingUsers = _userRepository.GetUserByEmail(userForRegistration.Email);
-                if (existingUsers == null)
+                if (userForRegistration.Password == userForRegistration.PasswordConfirm)
                 {
-                    byte[] passwordSalt = new byte[128 / 8];
-                    using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+                    User existingUsers = _userRepository.GetUserByEmail(userForRegistration.Email);
+                    if (existingUsers == null)
                     {
-                        rng.GetNonZeroBytes(passwordSalt);
-                    }
+                        byte[] passwordSalt = new byte[128 / 8];
+                        using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+                        {
+                            rng.GetNonZeroBytes(passwordSalt);
+                        }
 
-                    byte[] passwordHash = GetPasswordHash(userForRegistration.Password, passwordSalt);
+                        byte[] passwordHash = GetPasswordHash(userForRegistration.Password, passwordSalt);
 
-                    Auth auth = new Auth();
-                    auth.PasswordHash = passwordHash;
-                    auth.PasswordSalt = passwordSalt;
-                    auth.Email = userForRegistration.Email;
-                    _userRepository.AddEntity<Auth>(auth);
+                        Auth auth = new Auth();
+                        auth.PasswordHash = passwordHash;
+                        auth.PasswordSalt = passwordSalt;
+                        auth.Email = userForRegistration.Email;
+                        _userRepository.AddEntity<Auth>(auth);
 
-                    if (_userRepository.SaveChangers())
-                    {
-
-                        User userDb = _mapper.Map<User>(userForRegistration);
-                        _userRepository.AddEntity<User>(userDb);
                         if (_userRepository.SaveChangers())
                         {
-                            return Ok();
+
+                            User userDb = _mapper.Map<User>(userForRegistration);
+                            _userRepository.AddEntity<User>(userDb);
+                            if (_userRepository.SaveChangers())
+                            {
+                                return Ok();
+                            }
+                            return StatusCode(500, "Failed to add user.");
                         }
-                        return StatusCode(500, "Failed to add user.");
+                        return StatusCode(500, "Failed to register user.");
                     }
-                    return StatusCode(500, "Failed to register user.");
+                    return StatusCode(500, "User with this email already exists!");
                 }
-                return StatusCode(500, "User with this email already exists!");
+                return StatusCode(500, "Passwords do not match!");
             }
-            return StatusCode(500, "Passwords do not match!");
+            return StatusCode(500, "Please enter a valid Email Address and Phone Number!");
         }
+
 
         [AllowAnonymous]
         [HttpPost("Login")]
@@ -196,6 +211,45 @@ namespace LibrarySystem.Web.API.Controllers
             return tokenHandler.WriteToken(token);
 
         }
+
+        public static bool IsValidEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return false;
+
+            try
+            {
+                string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+
+                Regex regex = new Regex(emailPattern);
+                return regex.IsMatch(email);
+            }
+            catch (RegexMatchTimeoutException e)
+            {
+                return false;
+            }
+
+        }
+
+        public static bool IsValidPhoneNo(string phoneNo)
+        {
+            if (string.IsNullOrWhiteSpace(phoneNo))
+                return false;
+
+            try
+            {
+                string phoneNoPattern = @"^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$";
+
+                Regex regex = new Regex(phoneNoPattern);
+                return regex.IsMatch(phoneNo);
+            }
+            catch (RegexMatchTimeoutException e)
+            {
+                return false;
+            }
+
+        }
+
 
     }
 }
