@@ -13,6 +13,7 @@ namespace LibrarySystem.Data.Entities
         [Key]
         [Required]
         [MaxLength(100)]
+        [EmailAddress]
         public string Email { get; set; } = string.Empty;
         
         [Required]
@@ -29,6 +30,7 @@ namespace LibrarySystem.Data.Entities
 
         [Required]
         [MaxLength(50)]
+        [DataType(DataType.PhoneNumber)]
         public string PhonneNumber { get; set; } = string.Empty;
 
     }
