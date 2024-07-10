@@ -60,44 +60,49 @@ namespace LibrarySystem.Web.API.Controllers
         {
             bool isValidEmail = IsValidEmail(userForRegistration.Email);
             bool isValidPhoneNum = IsValidPhoneNo(userForRegistration.PhonneNumber);
+            bool isValidPass = isValidPassword(userForRegistration.Password);
 
             if (isValidEmail && isValidPhoneNum)
             {
-                if (userForRegistration.Password == userForRegistration.PasswordConfirm)
+                if (isValidPass)
                 {
-                    User existingUsers = _userRepository.GetUserByEmail(userForRegistration.Email);
-                    if (existingUsers == null)
+                    if (userForRegistration.Password == userForRegistration.PasswordConfirm)
                     {
-                        byte[] passwordSalt = new byte[128 / 8];
-                        using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+                        User existingUsers = _userRepository.GetUserByEmail(userForRegistration.Email);
+                        if (existingUsers == null)
                         {
-                            rng.GetNonZeroBytes(passwordSalt);
-                        }
+                            byte[] passwordSalt = new byte[128 / 8];
+                            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+                            {
+                                rng.GetNonZeroBytes(passwordSalt);
+                            }
 
-                        byte[] passwordHash = GetPasswordHash(userForRegistration.Password, passwordSalt);
+                            byte[] passwordHash = GetPasswordHash(userForRegistration.Password, passwordSalt);
 
-                        Auth auth = new Auth();
-                        auth.PasswordHash = passwordHash;
-                        auth.PasswordSalt = passwordSalt;
-                        auth.Email = userForRegistration.Email;
-                        _userRepository.AddEntity<Auth>(auth);
+                            Auth auth = new Auth();
+                            auth.PasswordHash = passwordHash;
+                            auth.PasswordSalt = passwordSalt;
+                            auth.Email = userForRegistration.Email;
+                            _userRepository.AddEntity<Auth>(auth);
 
-                        if (_userRepository.SaveChangers())
-                        {
-
-                            User userDb = _mapper.Map<User>(userForRegistration);
-                            _userRepository.AddEntity<User>(userDb);
                             if (_userRepository.SaveChangers())
                             {
-                                return Ok();
+
+                                User userDb = _mapper.Map<User>(userForRegistration);
+                                _userRepository.AddEntity<User>(userDb);
+                                if (_userRepository.SaveChangers())
+                                {
+                                    return Ok();
+                                }
+                                return StatusCode(500, "Failed to add user.");
                             }
-                            return StatusCode(500, "Failed to add user.");
+                            return StatusCode(500, "Failed to register user.");
                         }
-                        return StatusCode(500, "Failed to register user.");
+                        return StatusCode(500, "User with this email already exists!");
                     }
-                    return StatusCode(500, "User with this email already exists!");
+                    return StatusCode(500, "Passwords do not match!");
                 }
-                return StatusCode(500, "Passwords do not match!");
+                return StatusCode(500, "Password must be atleast 8 to 15 characters. It contains atleast one Upper case,numbers and Special Characters.");
             }
             return StatusCode(500, "Please enter a valid Email Address and Phone Number!");
         }
@@ -107,23 +112,27 @@ namespace LibrarySystem.Web.API.Controllers
         [HttpPost("Login")]
         public IActionResult Login(UserForLoginDto userForLogin)
         {
-            Auth userForConfirmation = _userRepository.GetAuthByEmail(userForLogin.Email);
-
-            if(userForConfirmation.PasswordHash != null && userForConfirmation.PasswordSalt != null)
+            if (IsValidEmail(userForLogin.Email))
             {
-                byte[] passwordHash = GetPasswordHash(userForLogin.Password, userForConfirmation.PasswordSalt);
+                Auth userForConfirmation = _userRepository.GetAuthByEmail(userForLogin.Email);
 
-                for (int index = 0; index < passwordHash.Length; index++)
+                if (userForConfirmation.PasswordHash != null && userForConfirmation.PasswordSalt != null)
                 {
-                    if (passwordHash[index] != userForConfirmation.PasswordHash[index])
+                    byte[] passwordHash = GetPasswordHash(userForLogin.Password, userForConfirmation.PasswordSalt);
+
+                    for (int index = 0; index < passwordHash.Length; index++)
                     {
-                        return StatusCode(401, "Incorrect password!");
+                        if (passwordHash[index] != userForConfirmation.PasswordHash[index])
+                        {
+                            return StatusCode(401, "Incorrect password!");
+                        }
                     }
                 }
-            }
-            return Ok(new Dictionary<string, string> {
+                return Ok(new Dictionary<string, string> {
                 {"token", CreateToken(userForLogin.Email)}
             });
+            }
+            return StatusCode(500, "Please enter a valid Email Address!");
         }
 
         [HttpPut("EditUser")]
@@ -133,15 +142,26 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (userDb != null)
             {
-                userDb.PhonneNumber = userForEdit.PhonneNumber;
-                userDb.FirstName = userForEdit.FirstName;
-                userDb.LastName = userForEdit.LastName; 
-                userDb.Gender = userForEdit.Gender;
-
-                if (_userRepository.SaveChangers())
+                if (IsValidPhoneNo(userForEdit.PhonneNumber))
                 {
-                    return Ok(userDb);
+                    userDb.PhonneNumber = (userForEdit.PhonneNumber);
+                    userDb.FirstName = userForEdit.FirstName;
+                    userDb.LastName = userForEdit.LastName;
+                    userDb.Gender = userForEdit.Gender;
+
+
+                    if (_userRepository.SaveChangers())
+                    {
+                        return Ok(userDb);
+                    }
                 }
+                else
+                {
+                    return StatusCode(500, "Enter a Valid Phone Number");
+                }
+
+               
+
 
                 return StatusCode(500, "Failed to Update User");
             }
@@ -248,6 +268,27 @@ namespace LibrarySystem.Web.API.Controllers
                 return false;
             }
 
+        }
+
+
+        public static bool isValidPassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password))   
+                return false;
+
+            try
+            {
+                string passwordPattern = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$";
+
+                Regex regex= new Regex(passwordPattern);
+                return regex.IsMatch(password);
+
+            }
+            catch (RegexMatchTimeoutException e)
+            {
+
+                return false;
+            }
         }
 
 
