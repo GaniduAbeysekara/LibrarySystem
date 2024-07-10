@@ -6,6 +6,7 @@ namespace LibrarySystem.Data.Entities
     public class Book
     {
         [Key]
+        [Required]
         public string ISBN { get; set; } = string.Empty;
 
         [Required]
@@ -16,13 +17,9 @@ namespace LibrarySystem.Data.Entities
         [MaxLength(100)]
         public string Author { get; set; } = string.Empty;
 
-        //[Required]
-        //[MaxLength(100)]
-        //public string Description { get; set; } = string.Empty ;
-
-        //[Required]
-        //[MaxLength(100)]
-        //public string CategoryId { get; set; } = string.Empty;
+        [Required]
+        [MaxLength(500)]
+        public string Description { get; set; } = string.Empty ;
 
 
     }
