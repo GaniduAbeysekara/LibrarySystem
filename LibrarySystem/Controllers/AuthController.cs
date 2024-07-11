@@ -223,7 +223,7 @@ namespace LibrarySystem.Web.API.Controllers
                 _userRepository.RemoveEntity<Auth>(authdb);
                 if (_userRepository.SaveChangers())
                 {
-                    return Ok(new { status = "success", message = "User created successfully." });
+                    return Ok(new { status = "success", message = "User deleted successfully." });
                 }
 
                 return BadRequest(new { status = "error", message = "Failed to Delete User" });
