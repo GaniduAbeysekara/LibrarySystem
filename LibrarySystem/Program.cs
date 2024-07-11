@@ -1,6 +1,8 @@
 using LibrarySystem.Data.DbContexts;
 using LibrarySystem.Data.Repository.Infrastructure;
 using LibrarySystem.Data.Repository.Interface;
+using LibrarySystem.Web.API.Services.Infrastructure;
+using LibrarySystem.Web.API.Services.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -50,6 +52,7 @@ builder.Services.AddSwaggerGen(options => {
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuthService, AuthService>();
 
 string? tokenKeyString = builder.Configuration.GetSection("AppSettings:TokenKey").Value;
 
