@@ -9,6 +9,7 @@ namespace LibrarySystem.Web.API.Services.Interface
         public string CreateToken(string email);
         public  bool IsValidEmail(string email);
         public  bool IsValidPhoneNo(string phoneNo);
+        public bool isValidPassword(string password);
         public IActionResult ValidateObjectNotNullOrEmpty(object model);
     }
 }

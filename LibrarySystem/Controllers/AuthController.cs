@@ -48,46 +48,59 @@ namespace LibrarySystem.Web.API.Controllers
             {
                 return validationResult;
             }
+
             bool isValidEmail = _authService.IsValidEmail(userForRegistration.Email);
+            if (!isValidEmail )
+            {
+                return BadRequest(new { status = "error", message = "Please enter a valid Email Address!" });
+            }
+
             bool isValidPhoneNum = _authService.IsValidPhoneNo(userForRegistration.PhonneNumber);
-            if (isValidEmail && isValidPhoneNum)
+            if (!isValidPhoneNum)
+            {
+                return BadRequest(new { status = "error", message = "Please enter a valid Phone Number!" });
+            }
+
+            bool isValidPass = _authService.isValidPassword(userForRegistration.Password);
+            if (!isValidPass)
+            {
+                return BadRequest(new { status = "error", message = "Password must be atleast 8 to 15 characters. It contains atleast one Upper case,numbers and Special Characters." });
+            }
+
+            if (userForRegistration.Password == userForRegistration.PasswordConfirm)
+            {
+                User existingUsers = _userRepository.GetUserByEmail(userForRegistration.Email);
+                if (existingUsers == null)
                 {
-                    if (userForRegistration.Password == userForRegistration.PasswordConfirm)
+                    byte[] passwordSalt = new byte[128 / 8];
+                    using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
                     {
-                        User existingUsers = _userRepository.GetUserByEmail(userForRegistration.Email);
-                        if (existingUsers == null)
-                        {
-                            byte[] passwordSalt = new byte[128 / 8];
-                            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
-                            {
-                                rng.GetNonZeroBytes(passwordSalt);
-                            }
-
-                            byte[] passwordHash = _authService.GetPasswordHash(userForRegistration.Password, passwordSalt);
-
-                            Auth auth = new Auth();
-                            auth.PasswordHash = passwordHash;
-                            auth.PasswordSalt = passwordSalt;
-                            auth.Email = userForRegistration.Email;
-                            _userRepository.AddEntity<Auth>(auth);
-
-                            if (_userRepository.SaveChangers())
-                            {
-                                User userDb = _mapper.Map<User>(userForRegistration);
-                                _userRepository.AddEntity<User>(userDb);
-                                if (_userRepository.SaveChangers())
-                                {
-                                    return StatusCode(201, new { status = "success", message = "User created successfully." });
-                                }
-                                return StatusCode(500, new { status = "error", message = "Failed to register user." });
-                            }
-                            return StatusCode(500, new { status = "error", message = "Failed to register user." });
-                        }
-                        return BadRequest(new { status = "error", message = "User with this email already exists." });
+                        rng.GetNonZeroBytes(passwordSalt);
                     }
-                    return BadRequest(new { status = "error", message = "Passwords do not match!" });
+
+                    byte[] passwordHash = _authService.GetPasswordHash(userForRegistration.Password, passwordSalt);
+
+                    Auth auth = new Auth();
+                    auth.PasswordHash = passwordHash;
+                    auth.PasswordSalt = passwordSalt;
+                    auth.Email = userForRegistration.Email;
+                    _userRepository.AddEntity<Auth>(auth);
+
+                    if (_userRepository.SaveChangers())
+                    {
+                        User userDb = _mapper.Map<User>(userForRegistration);
+                        _userRepository.AddEntity<User>(userDb);
+                        if (_userRepository.SaveChangers())
+                        {
+                            return StatusCode(201, new { status = "success", message = "User created successfully." });
+                        }
+                        return StatusCode(500, new { status = "error", message = "Failed to register user." });
+                    }
+                    return StatusCode(500, new { status = "error", message = "Failed to register user." });
                 }
-                return BadRequest(new { status = "error", message = "Please enter a valid Email Address and Phone Number!" });
+                return BadRequest(new { status = "error", message = "User with this email already exists." });
+            }
+            return BadRequest(new { status = "error", message = "Passwords do not match!" });
         }
 
 
@@ -176,15 +189,26 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (userDb != null)
             {
-                userDb.PhonneNumber = userForEdit.PhonneNumber;
-                userDb.FirstName = userForEdit.FirstName;
-                userDb.LastName = userForEdit.LastName; 
-                userDb.Gender = userForEdit.Gender;
-
-                if (_userRepository.SaveChangers())
+                if (_authService.IsValidPhoneNo(userForEdit.PhonneNumber))
                 {
-                    return Ok(userDb);
+                    userDb.PhonneNumber = (userForEdit.PhonneNumber);
+                    userDb.FirstName = userForEdit.FirstName;
+                    userDb.LastName = userForEdit.LastName;
+                    userDb.Gender = userForEdit.Gender;
+
+
+                    if (_userRepository.SaveChangers())
+                    {
+                        return Ok(userDb);
+                    }
                 }
+                else
+                {
+                    return StatusCode(500, "Enter a Valid Phone Number");
+                }
+
+               
+
 
                 return StatusCode(500, "Failed to Update User");
             }

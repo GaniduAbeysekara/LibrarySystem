@@ -134,6 +134,26 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
         }
 
+        public bool isValidPassword(string password)
+        {
+            if (string.IsNullOrWhiteSpace(password))
+                return false;
+
+            try
+            {
+                string passwordPattern = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$";
+
+                Regex regex = new Regex(passwordPattern);
+                return regex.IsMatch(password);
+
+            }
+            catch (RegexMatchTimeoutException e)
+            {
+
+                return false;
+            }
+        }
+
         public  IActionResult ValidateObjectNotNullOrEmpty(object model)
         {
             if (model == null)

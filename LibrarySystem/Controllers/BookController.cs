@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.InteropServices;
 
 namespace LibrarySystem.Web.API.Controllers
 {
@@ -18,131 +19,176 @@ namespace LibrarySystem.Web.API.Controllers
             _dataContext = dataContext;
         }
 
-        // get all books
-        [HttpGet]
-        public async Task<IActionResult> GetAllBooks()
+        // search books by book name, author name, or description
+        [HttpGet("searchbook")]
+        public async Task<IActionResult> SearchBooks()
         {
-            try
+            string keyword = HttpContext.Request.Query["Search"].ToString();
+
+            if (!string.IsNullOrWhiteSpace(keyword))
             {
-                var books = await _dataContext.Books.ToListAsync();
-                if (books == null || !books.Any())
+                try
                 {
-                    return Ok("No books available.");
+                    var books = await _dataContext.Books.Where(b => b.ISBN.Contains(keyword) ||
+                        b.BookTitle.Contains(keyword) ||
+                        b.Author.Contains(keyword) ||
+                        b.Description.Contains(keyword)).ToListAsync();
+
+                    if (books == null || !books.Any())
+                    {
+                        return NotFound("No books found matching the keyword.");
+                    }
+
+                    return Ok(books);
                 }
-                return Ok(books);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, "Internal server error. Please try again later.");
-            }
-        }
-
-        // search books by book name or author name
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchBooks([Required] string keyword)
-        {
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                return BadRequest("Keyword cannot be null or empty.");
-            }
-
-            try
-            {
-                var books = await _dataContext.Books
-                    .Where(b => b.BookTitle.Contains(keyword) || b.Author.Contains(keyword))
-                    .ToListAsync();
-
-                if (books == null || !books.Any())
+                catch (Exception ex)
                 {
-                    return NotFound("No books found matching the keyword.");
+                    return StatusCode(500, "Internal server error. Please try again later.");
                 }
-
-                return Ok(books);
             }
-            catch (Exception ex)
+
+            else
             {
-                // Log the exception
-                // _logger.LogError(ex, "Error searching books with keyword: {keyword}", keyword);
-                return StatusCode(500, "Internal server error. Please try again later.");
+                try
+                {
+                    var books = await _dataContext.Books.ToListAsync();
+                    if (books == null || !books.Any())
+                    {
+                        return Ok("No books available.");
+                    }
+                    return Ok(books);
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, "Internal server error. Please try again later.");
+                }
             }
         }
 
-        [HttpGet("{isbn}")]
-        public async Task<IActionResult> GetBookByISBN(string isbn)
-        {
-            var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
-            if (book == null)
-            {
-                return NotFound();
-            }
-            return Ok(book);
-        }
 
-        //get book by author name
-        [HttpGet("author/{author}")]
-        public async Task<IActionResult> GetBooksByAuthor(string author)
-        {
-            var books = await _dataContext.Books.Where(u => u.Author == author).ToListAsync();
-            if (books == null || books.Count == 0)
-            {
-                return NotFound();
-            }
-            return Ok(books);
-        }
-
-
-        //create book details
-        [HttpPost]
+        //create book
+        [HttpPost("createbook")]
         public async Task<IActionResult> Create([FromBody] Book book)
         {
-            if (book == null)
+            if (string.IsNullOrWhiteSpace(book.ISBN))
             {
-                return BadRequest();
+                return BadRequest("The ISBN field is required.");
+            }
+            if (string.IsNullOrWhiteSpace(book.BookTitle))
+            {
+                return BadRequest("The Book Title field is required.");
+            }
+            if (string.IsNullOrWhiteSpace(book.Author))
+            {
+                return BadRequest("The Author field is required.");
             }
 
-            var newBook = new Book
+            try
             {
-                ISBN = book.ISBN,
-                BookTitle = book.BookTitle,
-                Author = book.Author,
-            };
+                var existingBook = await _dataContext.Books.FirstOrDefaultAsync(b => b.ISBN == book.ISBN);
+                if (existingBook != null)
+                {
+                    return Conflict("A book with the same ISBN already exists.");
+                }
 
-            _dataContext.Books.Add(newBook);
-            await _dataContext.SaveChangesAsync();
+                var newBook = new Book
+                {
+                    ISBN = book.ISBN,
+                    BookTitle = book.BookTitle,
+                    Author = book.Author,
+                    Description = book.Description,
+                };
 
-            return Ok(newBook);
+                _dataContext.Books.Add(newBook);
+                await _dataContext.SaveChangesAsync();
+
+                return StatusCode(201, newBook); 
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal server error occurred.");
+            }
         }
 
         //delete book
-        [HttpDelete("{isbn}")]
+        [HttpDelete("deletebook/{isbn}")]
         public async Task<IActionResult> Delete(string isbn)
         {
-            var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
-            if (book == null)
+            if (string.IsNullOrWhiteSpace(isbn))
             {
-                return NotFound();
+                return BadRequest("ISBN cannot be null or empty.");
             }
 
-            _dataContext.Books.Remove(book);
-            await _dataContext.SaveChangesAsync();
-            return NoContent();
+            try
+            {
+                var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
+                if (book == null)
+                {
+                    return NotFound("No book found matching the provided ISBN.");
+                }
+
+                _dataContext.Books.Remove(book);
+                await _dataContext.SaveChangesAsync();
+
+                return Ok(new { status = 204, message = "Book deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal server error occurred.");
+            }
         }
 
-        //edit book details
-        [HttpPut("{isbn}")]
+
+
+        //edit book
+        [HttpPut("editbook/{isbn}")]
         public async Task<IActionResult> Edit(string isbn, [FromBody] Book updatedBook)
         {
-            var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
-            if (book == null)
+            if (string.IsNullOrWhiteSpace(isbn))
             {
-                return NotFound();
+                return BadRequest("The ISBN parameter is required.");
+            }
+            if (string.IsNullOrWhiteSpace(updatedBook.BookTitle))
+            {
+                return BadRequest("The Book Title field is required.");
+            }
+            if (string.IsNullOrWhiteSpace(updatedBook.Author))
+            {
+                return BadRequest("The Author field is required.");
+            }
+            if (string.IsNullOrWhiteSpace(updatedBook.Description))
+            {
+                return BadRequest("The Description field is required.");
             }
 
-            book.BookTitle = updatedBook.BookTitle;
-            book.Author = updatedBook.Author;
+            try
+            {
+                var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
+                if (book == null)
+                {
+                    return NotFound("No books found matching the ISBN.");
+                }
 
-            await _dataContext.SaveChangesAsync();
-            return NoContent();
+                // Ensure ISBN is not updated
+                if (updatedBook.ISBN != isbn)
+                {
+                    return BadRequest("The ISBN field cannot be updated.");
+                }
+
+                // Update other fields
+                book.BookTitle = updatedBook.BookTitle;
+                book.Author = updatedBook.Author;
+                book.Description = updatedBook.Description;
+
+                await _dataContext.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "Internal server error occurred.");
+            }
         }
+
+
     }
 }
