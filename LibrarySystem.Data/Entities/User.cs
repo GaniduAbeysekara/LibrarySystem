@@ -1,16 +1,18 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace LibrarySystem.Data.Entities
 {
-    
     public class User
     {
-        
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        [Key]
+        [Column(Order = 1)]
         public int UserId { get; set; }
 
         [Key]
+        [Column(Order = 2)]
         [Required]
         [MaxLength(100)]
         [EmailAddress]
@@ -32,6 +34,14 @@ namespace LibrarySystem.Data.Entities
         [MaxLength(50)]
         [DataType(DataType.PhoneNumber)]
         public string PhonneNumber { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(5)]
+        public bool IsDelete { get; set; } = false;
+
+        [Required]
+        [MaxLength(5)]
+        public bool IsAdmin { get; set; } = false;
 
     }
 }
