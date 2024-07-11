@@ -1,10 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using LibrarySystem.Data.Entities;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LibrarySystem.Web.API.Services.Interface
 {
     public interface IAuthService
     {
-        public string GetUserFromToken(string accessToken);
+        public void RevokeToken(string token);
+        public bool IsTokenRevoked(string token);
+        public string GetUserFromToken(string? jwt);
         public byte[] GetPasswordHash(string password, byte[] passwordSalt);
         public string CreateToken(string email);
         public  bool IsValidEmail(string email);

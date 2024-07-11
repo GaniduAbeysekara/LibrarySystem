@@ -1,19 +1,17 @@
-﻿using LibrarySystem.Web.API.Services.Interface;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text.RegularExpressions;
-using System.Text;
-using System.Reflection;
-using Microsoft.AspNetCore.Mvc;
-using System.ComponentModel;
+﻿using AutoMapper;
 using LibrarySystem.Data.Entities;
-using LibrarySystem.Web.API.Model;
-using System.Security.Cryptography;
-using AutoMapper;
 using LibrarySystem.Data.Repository.Interface;
+using LibrarySystem.Web.API.Model;
+using LibrarySystem.Web.API.Services.Interface;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.IdentityModel.Tokens;
+using System.ComponentModel;
+using System.IdentityModel.Tokens.Jwt;
+using System.Reflection;
+using System.Security.Claims;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace LibrarySystem.Web.API.Services.Infrastructure
 {
@@ -33,17 +31,22 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
             _config = config;
         }
 
-        public static JwtSecurityToken ConvertJwtStringToJwtSecurityToken(string? jwt)
-        {
-            var handler = new JwtSecurityTokenHandler();
-            var token = handler.ReadJwtToken(jwt);
+        private static readonly HashSet<string> _revokedTokens = new HashSet<string>();
 
-            return token;
+        public void RevokeToken(string token)
+        {
+            _revokedTokens.Add(token);
         }
 
-        public string GetUserFromToken(string accessToken)
+        public bool IsTokenRevoked(string token)
         {
-            var jwtSecurityToken = ConvertJwtStringToJwtSecurityToken(accessToken);
+            return _revokedTokens.Contains(token);
+        }
+
+        public string GetUserFromToken(string? jwt)
+        {
+            var handler = new JwtSecurityTokenHandler();
+            var jwtSecurityToken = handler.ReadJwtToken(jwt);
             var loggedInEmail = jwtSecurityToken.Claims.First(claim => claim.Type == "email").Value;
             return loggedInEmail;
         }
