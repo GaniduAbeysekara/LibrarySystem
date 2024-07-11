@@ -6,14 +6,8 @@ using LibrarySystem.Web.API.Services.Interface;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
-using System.Text.RegularExpressions;
 
 namespace LibrarySystem.Web.API.Controllers
 {
@@ -187,33 +181,34 @@ namespace LibrarySystem.Web.API.Controllers
             var email = _authService.GetUserFromToken(accessToken);
             var userDb = _userRepository.GetUserByEmail(email);
 
+            var validationResult = _authService.ValidateObjectNotNullOrEmpty(userForEdit);
+            if (validationResult != null)
+            {
+                return validationResult;
+            }
+
+            bool isValidPhoneNum = _authService.IsValidPhoneNo(userForEdit.PhonneNumber);
+            if (!isValidPhoneNum)
+            {
+                return BadRequest(new { status = "error", message = "Please enter a valid Phone Number!" });
+            }
+
             if (userDb != null)
             {
-                if (_authService.IsValidPhoneNo(userForEdit.PhonneNumber))
+                userDb.PhonneNumber = (userForEdit.PhonneNumber);
+                userDb.FirstName = userForEdit.FirstName;
+                userDb.LastName = userForEdit.LastName;
+                userDb.Gender = userForEdit.Gender;
+
+                if (_userRepository.SaveChangers())
                 {
-                    userDb.PhonneNumber = (userForEdit.PhonneNumber);
-                    userDb.FirstName = userForEdit.FirstName;
-                    userDb.LastName = userForEdit.LastName;
-                    userDb.Gender = userForEdit.Gender;
-
-
-                    if (_userRepository.SaveChangers())
-                    {
-                        return Ok(userDb);
-                    }
+                    return Ok(new{ status = "success", message = "User updated successfully"});
                 }
-                else
-                {
-                    return StatusCode(500, "Enter a Valid Phone Number");
-                }
-
-               
-
-
-                return StatusCode(500, "Failed to Update User");
+                return BadRequest(new { status = "error", message = "Failed to Update User" });
             }
-            return StatusCode(500, "User feilds ar null");
+            return StatusCode(500, new { status = "error", message = "This user does not exist" });
         }
+
 
         [HttpDelete("DeleteUser")]
         public IActionResult DeleteUser(string email)
@@ -228,7 +223,7 @@ namespace LibrarySystem.Web.API.Controllers
                 _userRepository.RemoveEntity<Auth>(authdb);
                 if (_userRepository.SaveChangers())
                 {
-                    return Ok(new { status = "success", message = "User created successfully." });
+                    return Ok(new { status = "success", message = "User deleted successfully." });
                 }
 
                 return BadRequest(new { status = "error", message = "Failed to Delete User" });
@@ -236,6 +231,19 @@ namespace LibrarySystem.Web.API.Controllers
             return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
         }
 
-        
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", string.Empty);
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest(new { status = "error", message = "Token is required." });
+            }
+
+            _authService.RevokeToken(token);
+            return Ok(new { status = "success", message = "Logged out successfully" });
+        }
+
+
     }
 }
