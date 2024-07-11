@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.InteropServices;
+using YourNamespace.ModelBinders;
 
 namespace LibrarySystem.Web.API.Controllers
 {
@@ -20,29 +22,47 @@ namespace LibrarySystem.Web.API.Controllers
 
         // search books by book name, author name, or description
         [HttpGet("searchbook")]
-        public async Task<IActionResult> SearchBooks([Required] string keyword)
+        public async Task<IActionResult> SearchBooks()
         {
-            if (string.IsNullOrWhiteSpace(keyword))
-            {
-                return BadRequest("Keyword cannot be null or empty.");
-            }
+            string keyword = HttpContext.Request.Query["Search"].ToString();
 
-            try
+            if (!string.IsNullOrWhiteSpace(keyword))
             {
-                var books = await _dataContext.Books
-                    .Where(b => b.BookTitle.Contains(keyword) || b.Author.Contains(keyword) || b.Description.Contains(keyword))
-                    .ToListAsync();
-
-                if (books == null || !books.Any())
+                try
                 {
-                    return NotFound("No books found matching the keyword.");
-                }
+                    var books = await _dataContext.Books.Where(b => b.ISBN.Contains(keyword) ||
+                        b.BookTitle.Contains(keyword) ||
+                        b.Author.Contains(keyword) ||
+                        b.Description.Contains(keyword)).ToListAsync();
 
-                return Ok(books);
+                    if (books == null || !books.Any())
+                    {
+                        return NotFound("No books found matching the keyword.");
+                    }
+
+                    return Ok(books);
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, "Internal server error. Please try again later.");
+                }
             }
-            catch (Exception ex)
+
+            else
             {
-                return StatusCode(500, "Internal server error. Please try again later.");
+                try
+                {
+                    var books = await _dataContext.Books.ToListAsync();
+                    if (books == null || !books.Any())
+                    {
+                        return Ok("No books available.");
+                    }
+                    return Ok(books);
+                }
+                catch (Exception ex)
+                {
+                    return StatusCode(500, "Internal server error. Please try again later.");
+                }
             }
         }
 
