@@ -48,6 +48,14 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
             return loggedInEmail;
         }
 
+
+
+        public bool GetStatusFromToken(string accessToken)
+        {
+            var jwtSecurityToken = ConvertJwtStringToJwtSecurityToken(accessToken);
+            var isAdminStatus = jwtSecurityToken.Claims.First(claim => claim.Type == "isAdmin").Value;
+            return Convert.ToBoolean(isAdminStatus);
+        }
         public byte[] GetPasswordHash(string password, byte[] passwordSalt)
         {
             string passwordSaltPlusString = _config.GetSection("AppSettings:PasswordKey").Value +
@@ -62,10 +70,13 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
             );
         }
 
-        public string CreateToken(string email)
+        public string CreateToken(string email,bool isAdmin)
         {
+
             Claim[] claims = new Claim[] {
-                new Claim("email", email)
+                new Claim("email", email),
+                new Claim("isAdmin",isAdmin.ToString())
+
             };
 
             string? tokenKeyString = _config.GetSection("AppSettings:TokenKey").Value;

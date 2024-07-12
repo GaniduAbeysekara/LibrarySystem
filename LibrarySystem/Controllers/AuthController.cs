@@ -108,6 +108,9 @@ namespace LibrarySystem.Web.API.Controllers
         [HttpPost("Login")]
         public IActionResult Login(UserForLoginDto userForLogin)
         {
+
+            User UserDetails = _userRepository.GetUserByEmail(userForLogin.Email);
+          
             var validationResult = _authService.ValidateObjectNotNullOrEmpty(userForLogin);
             if (validationResult != null)
             {
@@ -138,11 +141,14 @@ namespace LibrarySystem.Web.API.Controllers
                 }
             }
             return Ok(
+              
+
                 new
                 {
                     status = "success",
                     message = "Logged in Successfully",
-                    token = _authService.CreateToken(userForLogin.Email)
+                    token = _authService.CreateToken(userForLogin.Email, UserDetails.IsAdmin)
+
                 });
         }
 
@@ -215,25 +221,34 @@ namespace LibrarySystem.Web.API.Controllers
             return StatusCode(500, "User feilds ar null");
         }
 
+
         [HttpDelete("DeleteUser")]
         public IActionResult DeleteUser(string email)
         {
             var accessToken = HttpContext.GetTokenAsync(JwtBearerDefaults.AuthenticationScheme, "access_token").Result;
-            if ( _authService.GetUserFromToken(accessToken) != email)
+            var userStatus = _authService.GetStatusFromToken(accessToken);
+
+            if (userStatus != false) 
+            
             {
-                var userDb = _userRepository.GetUserByEmail(email);
-                var authdb = _userRepository.GetAuthByEmail(email);
-
-                _userRepository.RemoveEntity<User>(userDb);
-                _userRepository.RemoveEntity<Auth>(authdb);
-                if (_userRepository.SaveChangers())
+                if (_authService.GetUserFromToken(accessToken) != email)
                 {
-                    return Ok(new { status = "success", message = "User created successfully." });
-                }
+                    var userDb = _userRepository.GetUserByEmail(email);
+                    var authdb = _userRepository.GetAuthByEmail(email);
 
-                return BadRequest(new { status = "error", message = "Failed to Delete User" });
+                    _userRepository.RemoveEntity<User>(userDb);
+                    _userRepository.RemoveEntity<Auth>(authdb);
+                    if (_userRepository.SaveChangers())
+                    {
+                        return Ok(new { status = "success", message = "User Deleted successfully." });
+                    }
+
+                    return BadRequest(new { status = "error", message = "Failed to Delete User" });
+                }
+                return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
             }
-            return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
+
+            return BadRequest(new { status = "error", message = "Sorry..Only Admin Can delete Users.." });
         }
 
         

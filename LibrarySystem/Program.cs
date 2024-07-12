@@ -1,12 +1,14 @@
 using LibrarySystem.Data.DbContexts;
 using LibrarySystem.Data.Repository.Infrastructure;
 using LibrarySystem.Data.Repository.Interface;
+using LibrarySystem.Web.API.Model;
 using LibrarySystem.Web.API.Services.Infrastructure;
 using LibrarySystem.Web.API.Services.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Data;
 using System.Text;
 
 
@@ -76,6 +78,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         options.TokenValidationParameters = tokenValidationParameters;
     });
 
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy(UserRole.Admin, policy => policy.RequireRole(UserRole.Admin));
+    options.AddPolicy(UserRole.User, policy => policy.RequireRole(UserRole.User));
+});
 
 var app = builder.Build();
 
