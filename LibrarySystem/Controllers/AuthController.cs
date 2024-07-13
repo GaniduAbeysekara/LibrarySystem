@@ -243,7 +243,6 @@ namespace LibrarySystem.Web.API.Controllers
             _authService.RevokeToken(token);
             return Ok(new { status = "success", message = "Logged out successfully" });
         }
-
-
+fdf
     }
 }
