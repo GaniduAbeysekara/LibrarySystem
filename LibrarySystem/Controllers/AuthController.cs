@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using LibrarySystem.Data.DbContexts;
 using LibrarySystem.Data.Entities;
 using LibrarySystem.Data.Repository.Interface;
 using LibrarySystem.Web.API.Model;
@@ -7,6 +8,10 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Security.Cryptography;
 
 namespace LibrarySystem.Web.API.Controllers
@@ -20,11 +25,12 @@ namespace LibrarySystem.Web.API.Controllers
         private IAuthService _authService;
         private IMapper _mapper;
         private readonly IConfiguration _config;
-        public AuthController(IUserRepository userRepository, IConfiguration config,IAuthService authService)
+        private DataContext _dataContext;
+        public AuthController(IUserRepository userRepository, IConfiguration config,IAuthService authService, DataContext dataContext)
         {
             _userRepository = userRepository;
-            _authService = authService; 
-
+            _authService = authService;
+            _dataContext = dataContext;
             _mapper = new Mapper(new MapperConfiguration(cfg => {
                 cfg.CreateMap<UserForRegistrationDto, User>();
             }));
@@ -102,6 +108,9 @@ namespace LibrarySystem.Web.API.Controllers
         [HttpPost("Login")]
         public IActionResult Login(UserForLoginDto userForLogin)
         {
+
+            User UserDetails = _userRepository.GetUserByEmail(userForLogin.Email);
+          
             var validationResult = _authService.ValidateObjectNotNullOrEmpty(userForLogin);
             if (validationResult != null)
             {
@@ -132,11 +141,14 @@ namespace LibrarySystem.Web.API.Controllers
                 }
             }
             return Ok(
+              
+
                 new
                 {
                     status = "success",
                     message = "Logged in Successfully",
-                    token = _authService.CreateToken(userForLogin.Email)
+                    token = _authService.CreateToken(userForLogin.Email, UserDetails.IsAdmin)
+
                 });
         }
 
@@ -214,21 +226,87 @@ namespace LibrarySystem.Web.API.Controllers
         public IActionResult DeleteUser(string email)
         {
             var accessToken = HttpContext.GetTokenAsync(JwtBearerDefaults.AuthenticationScheme, "access_token").Result;
-            if ( _authService.GetUserFromToken(accessToken) != email)
-            {
-                var userDb = _userRepository.GetUserByEmail(email);
-                var authdb = _userRepository.GetAuthByEmail(email);
+            var userStatus = _authService.GetStatusFromToken(accessToken);
 
-                _userRepository.RemoveEntity<User>(userDb);
-                _userRepository.RemoveEntity<Auth>(authdb);
-                if (_userRepository.SaveChangers())
+            if (userStatus != false) 
+            
+            {
+                if (_authService.GetUserFromToken(accessToken) != email)
                 {
                     return Ok(new { status = "success", message = "User deleted successfully." });
                 }
+                    var userDb = _userRepository.GetUserByEmail(email);
+                    var authdb = _userRepository.GetAuthByEmail(email);
 
-                return BadRequest(new { status = "error", message = "Failed to Delete User" });
+                    _userRepository.RemoveEntity<User>(userDb);
+                    _userRepository.RemoveEntity<Auth>(authdb);
+                    if (_userRepository.SaveChangers())
+                    {
+                        return Ok(new { status = "success", message = "User Deleted successfully." });
+                    }
+
+                    return BadRequest(new { status = "error", message = "Failed to Delete User" });
+                }
+                return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
             }
-            return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
+
+            return BadRequest(new { status = "error", message = "Sorry..Only Admin Can delete Users.." });
+        }
+
+
+
+        // search Users by Email, First name, Last Name, Phone Number,Gender
+        [HttpGet("GetUsers")]
+        public async Task<IActionResult> SearchUser()
+        {
+            var accessToken = HttpContext.GetTokenAsync(JwtBearerDefaults.AuthenticationScheme, "access_token").Result;
+            var userStatus = _authService.GetStatusFromToken(accessToken);
+
+            if (userStatus)
+            {
+                string keyword = HttpContext.Request.Query["Search"].ToString();
+
+                if (!string.IsNullOrWhiteSpace(keyword))
+                {
+                    try
+                    {
+                        var users = await _dataContext.Users.Where(b => b.Email.Contains(keyword) ||
+                            b.FirstName.Contains(keyword) ||
+                            b.LastName.Contains(keyword) ||
+                            b.Gender.Contains(keyword) ||
+                            b.PhonneNumber.Contains(keyword)).ToListAsync();
+
+                        if (users == null || !users.Any())
+                        {
+                            return NotFound("No User/Users found matching the keyword.");
+                        }
+
+                        return Ok(users);
+                    }
+                    catch (Exception ex)
+                    {
+                        return StatusCode(500, "Internal server error. Please try again later.");
+                    }
+                }
+
+                else
+                {
+                    try
+                    {
+                        var users = await _dataContext.Users.ToListAsync();
+                        if (users == null || !users.Any())
+                        {
+                            return Ok("No Users available.");
+                        }
+                        return Ok(users);
+                    }
+                    catch (Exception ex)
+                    {
+                        return StatusCode(500, "Internal server error. Please try again later.");
+                    }
+                }
+            }
+                return StatusCode(500, "Sorry ... Only Admin can View Users");
         }
 
         [HttpPost("logout")]

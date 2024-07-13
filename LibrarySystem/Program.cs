@@ -1,6 +1,7 @@
 using LibrarySystem.Data.DbContexts;
 using LibrarySystem.Data.Repository.Infrastructure;
 using LibrarySystem.Data.Repository.Interface;
+using LibrarySystem.Web.API.Model;
 using LibrarySystem.Web.API.Services.Infrastructure;
 using LibrarySystem.Web.API.Services.Interface;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.IdentityModel.Tokens.Jwt;
+using System.Data;
 using System.Text;
 
 
@@ -96,6 +98,8 @@ builder.Services.AddAuthentication(options =>
         }
     };
 });
+
+
 
 
 var app = builder.Build();
