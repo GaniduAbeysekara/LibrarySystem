@@ -79,11 +79,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy(UserRole.Admin, policy => policy.RequireRole(UserRole.Admin));
-    options.AddPolicy(UserRole.User, policy => policy.RequireRole(UserRole.User));
-});
+
 
 var app = builder.Build();
 
