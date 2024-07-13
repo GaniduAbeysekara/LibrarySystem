@@ -162,29 +162,8 @@ namespace LibrarySystem.Web.API.Controllers
 
         }
 
-        [HttpGet("{email}")]
-
-        public User GetUser(string email)
-        {
-
-
-            if (_authService.IsValidEmail(email))
-            {
-                User user = _userRepository.GetUserByEmail(email);
-                if (user != null)
-                {
-                    return user;
-
-                }
-            }
-
-            throw new Exception("There is not email as " + email);
-
-        }
-
-
-
         [HttpPut("EditUser")]
+
         public IActionResult EditUser(UserForEdit userForEdit)
         {
             var accessToken = HttpContext.GetTokenAsync(JwtBearerDefaults.AuthenticationScheme, "access_token").Result;
@@ -212,13 +191,12 @@ namespace LibrarySystem.Web.API.Controllers
 
                 if (_userRepository.SaveChangers())
                 {
-                    return Ok(new{ status = "success", message = "User updated successfully"});
+                    return Ok(new { status = "success", message = "User updated successfully" });
                 }
                 return BadRequest(new { status = "error", message = "Failed to Update User" });
             }
             return StatusCode(500, new { status = "error", message = "This user does not exist" });
         }
-
 
 
         [HttpDelete("DeleteUser")]
@@ -275,14 +253,15 @@ namespace LibrarySystem.Web.API.Controllers
 
                         if (users == null || !users.Any())
                         {
-                            return NotFound("No User/Users found matching the keyword.");
+                            return BadRequest(new { status = "error", message = "No User/Users found matching the keyword." });
                         }
 
                         return Ok(users);
                     }
                     catch (Exception ex)
                     {
-                        return StatusCode(500, "Internal server error. Please try again later.");
+
+                        return BadRequest(new { status = "error", message = "Internal server error. Please try again later." });
                     }
                 }
 
@@ -293,18 +272,20 @@ namespace LibrarySystem.Web.API.Controllers
                         var users = await _dataContext.Users.ToListAsync();
                         if (users == null || !users.Any())
                         {
-                            return Ok("No Users available.");
+                            return Ok(new { status = "success", message = "No Users available." });
                         }
                         return Ok(users);
                     }
                     catch (Exception ex)
                     {
-                        return StatusCode(500, "Internal server error. Please try again later.");
+                        return BadRequest(new { status = "error", message = "Internal server error. Please try again later." });
                     }
                 }
             }
-            return StatusCode(500, "Sorry ... Only Admin can View Users");
+
+            return BadRequest(new { status = "error", message = "Sorry ... Only Admin can View Users" });
         }
+
 
 
         [HttpPost("logout")]
