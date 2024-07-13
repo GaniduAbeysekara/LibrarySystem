@@ -1,5 +1,6 @@
 ﻿using LibrarySystem.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace LibrarySystem.Data.DbContexts
 {
@@ -10,6 +11,13 @@ namespace LibrarySystem.Data.DbContexts
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.Entity<User>().HasKey(u => new { u.UserId, u.Email });
+
+            builder.Entity<User>()
+           .Property(u => u.Email)
+           .HasConversion(
+               email => email.ToLowerInvariant(),
+               email => email
+           );
         }
 
 

@@ -82,13 +82,16 @@ namespace LibrarySystem.Web.API.Controllers
                     Auth auth = new Auth();
                     auth.PasswordHash = passwordHash;
                     auth.PasswordSalt = passwordSalt;
-                    auth.Email = userForRegistration.Email;
+                    auth.Email = userForRegistration.Email.ToLower();
                     _userRepository.AddEntity<Auth>(auth);
 
                     if (_userRepository.SaveChangers())
                     {
+                     
+
                         User userDb = _mapper.Map<User>(userForRegistration);
                         _userRepository.AddEntity<User>(userDb);
+
                         if (_userRepository.SaveChangers())
                         {
                             return StatusCode(201, new { status = "success", message = "User created successfully." });
@@ -249,7 +252,9 @@ namespace LibrarySystem.Web.API.Controllers
                             b.FirstName.Contains(keyword) ||
                             b.LastName.Contains(keyword) ||
                             b.Gender.Contains(keyword) ||
-                            b.PhonneNumber.Contains(keyword)).ToListAsync();
+                            b.PhonneNumber.Contains(keyword) &&
+                            b.IsAdmin == false)
+                           .ToListAsync();
 
                         if (users == null || !users.Any())
                         {
@@ -269,7 +274,7 @@ namespace LibrarySystem.Web.API.Controllers
                 {
                     try
                     {
-                        var users = await _dataContext.Users.ToListAsync();
+                        var users = await _dataContext.Users.Where(a=>a.IsAdmin==false).ToListAsync();
                         if (users == null || !users.Any())
                         {
                             return Ok(new { status = "success", message = "No Users available." });

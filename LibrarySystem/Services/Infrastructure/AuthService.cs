@@ -117,7 +117,9 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
             try
             {
-                string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+                //string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
+
+                string emailPattern = @"^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$";
 
                 Regex regex = new Regex(emailPattern);
                 return regex.IsMatch(email);
