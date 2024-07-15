@@ -63,7 +63,7 @@ namespace LibrarySystem.Web.API.Controllers
             bool isValidPass = _authService.isValidPassword(userForRegistration.Password);
             if (!isValidPass)
             {
-                return BadRequest(new { status = "error", message = "Password must be atleast 8 to 15 characters. It contains atleast one Upper case,numbers and Special Characters." });
+                return BadRequest(new { status = "error", message = "Password must be atleast 8 to 15 characters. It contains atleast one Upper case,Lower Case,numbers and Special Characters." });
             }
 
             if (userForRegistration.Password == userForRegistration.PasswordConfirm)
@@ -187,14 +187,14 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (userDb != null)
             {
-                userDb.PhonneNumber = (userForEdit.PhonneNumber);
+                userDb.PhoneNumber = (userForEdit.PhonneNumber);
                 userDb.FirstName = userForEdit.FirstName;
                 userDb.LastName = userForEdit.LastName;
                 userDb.Gender = userForEdit.Gender;
 
                 if (_userRepository.SaveChangers())
                 {
-                    return Ok(new { status = "success", message = "User updated successfully" });
+                    return Ok(new { status = "success", message = "User updated successfully" , userForEdit });
                 }
                 return BadRequest(new { status = "error", message = "Failed to Update User" });
             }
@@ -252,7 +252,7 @@ namespace LibrarySystem.Web.API.Controllers
                             b.FirstName.Contains(keyword) ||
                             b.LastName.Contains(keyword) ||
                             b.Gender.Contains(keyword) ||
-                            b.PhonneNumber.Contains(keyword) &&
+                            b.PhoneNumber.Contains(keyword) &&
                             b.IsAdmin == false)
                            .ToListAsync();
 
