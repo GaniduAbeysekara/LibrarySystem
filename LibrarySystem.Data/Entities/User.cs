@@ -33,7 +33,7 @@ namespace LibrarySystem.Data.Entities
         [Required]
         [MaxLength(50)]
         [DataType(DataType.PhoneNumber)]
-        public string PhonneNumber { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(5)]
