@@ -127,6 +127,12 @@ namespace LibrarySystem.Web.API.Controllers
             bool isValidEmail = _authService.IsValidEmail(userForLogin.Email);
             if (isValidEmail != true)
             {
+                var emailCheck = userForLogin.Email.ToString();
+
+                if (emailCheck.ToLower() != emailCheck)
+                {
+                    return BadRequest(new { status = "error", message = "Email contains uppercase letters!" }); // Email contains uppercase letters
+                }
                 return BadRequest(new { status = "error", message = "Please enter a valid Email Address" });
             }
 
