@@ -54,7 +54,7 @@ namespace LibrarySystem.Web.API.Controllers
                 return BadRequest(new { status = "error", message = "Please enter a valid Email Address!" });
             }
 
-            bool isValidPhoneNum = _authService.IsValidPhoneNo(userForRegistration.PhonneNumber);
+            bool isValidPhoneNum = _authService.IsValidPhoneNo(userForRegistration.PhoneNumber);
             if (!isValidPhoneNum)
             {
                 return BadRequest(new { status = "error", message = "Please enter a valid Phone Number!" });
@@ -179,7 +179,7 @@ namespace LibrarySystem.Web.API.Controllers
                 return validationResult;
             }
 
-            bool isValidPhoneNum = _authService.IsValidPhoneNo(userForEdit.PhonneNumber);
+            bool isValidPhoneNum = _authService.IsValidPhoneNo(userForEdit.PhoneNumber);
             if (!isValidPhoneNum)
             {
                 return BadRequest(new { status = "error", message = "Please enter a valid Phone Number!" });
@@ -187,16 +187,41 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (userDb != null)
             {
-                userDb.PhoneNumber = (userForEdit.PhonneNumber);
-                userDb.FirstName = userForEdit.FirstName;
-                userDb.LastName = userForEdit.LastName;
-                userDb.Gender = userForEdit.Gender;
+                // List to track updated fields
+                var updatedFields = new List<string>();
+
+                if (userDb.FirstName != userForEdit.FirstName)
+                {
+                    userDb.FirstName = userForEdit.FirstName;
+                    updatedFields.Add(nameof(userDb.FirstName));
+                }
+
+                if (userDb.LastName != userForEdit.LastName)
+                {
+                    userDb.LastName = userForEdit.LastName;
+                    updatedFields.Add(nameof(userDb.LastName));
+                }
+
+                if (userDb.PhoneNumber != userForEdit.PhoneNumber)
+                {
+                    userDb.PhoneNumber = userForEdit.PhoneNumber;
+                    updatedFields.Add(nameof(userDb.PhoneNumber));
+                }
+
+                if (userDb.Gender != userForEdit.Gender)
+                {
+                    userDb.Gender = userForEdit.Gender;
+                    updatedFields.Add(nameof(userDb.Gender));
+                }
+                
+                var responseMessage = updatedFields.Count > 0 ? $"Updated fields: {string.Join(", ", updatedFields)}"
+                                            : "No fields were updated.";
 
                 if (_userRepository.SaveChangers())
                 {
-                    return Ok(new { status = "success", message = "User updated successfully" , userForEdit });
+                    return Ok(new { status = "success", message = responseMessage , userForEdit });
                 }
-                return BadRequest(new { status = "error", message = "Failed to Update User" });
+                return BadRequest(new { status = "error", message = responseMessage });
             }
             return StatusCode(500, new { status = "error", message = "This user does not exist" });
         }

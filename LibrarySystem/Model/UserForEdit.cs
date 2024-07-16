@@ -13,6 +13,6 @@ namespace LibrarySystem.Web.API.Model
         public string Gender { get; set; } = string.Empty;
 
         [DisplayName("Phonne Number")]
-        public string PhonneNumber { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
     }
 }
