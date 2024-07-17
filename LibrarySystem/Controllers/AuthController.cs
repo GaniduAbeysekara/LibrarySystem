@@ -55,7 +55,7 @@ namespace LibrarySystem.Web.API.Controllers
 
                 if (emailCheck.ToLower() != emailCheck)
                 {
-                    return BadRequest(new { status = "error", message = "Email contains uppercase letters!" }); // Email contains uppercase letters
+                    return BadRequest(new { status = "error", message = "Please enter a valid email address in lower case" }); // Email contains uppercase letters
                 }
 
                 return BadRequest(new { status = "error", message = "Please enter a valid Email Address!" });
@@ -101,7 +101,7 @@ namespace LibrarySystem.Web.API.Controllers
 
                         if (_userRepository.SaveChangers())
                         {
-                            return StatusCode(201, new { status = "success", message = "User created successfully." });
+                            return StatusCode(201, new { status = "success", message = "User created successfully.",userForRegistration });
                         }
                         return StatusCode(500, new { status = "error", message = "Failed to register user." });
                     }
@@ -131,7 +131,7 @@ namespace LibrarySystem.Web.API.Controllers
 
                 if (emailCheck.ToLower() != emailCheck)
                 {
-                    return BadRequest(new { status = "error", message = "Email contains uppercase letters!" }); // Email contains uppercase letters
+                    return BadRequest(new { status = "error", message = "Please enter a valid email address in lower case" }); // Email contains uppercase letters
                 }
                 return BadRequest(new { status = "error", message = "Please enter a valid Email Address" });
             }
@@ -139,7 +139,7 @@ namespace LibrarySystem.Web.API.Controllers
             Auth userForConfirmation = _userRepository.GetAuthByEmail(userForLogin.Email);
             if (userForConfirmation == null)
             {
-                return BadRequest(new { status = "error", message = "This email is not in the database" });
+                return BadRequest(new { status = "error", message = "This email is not registered" });
             }
 
             if (userForConfirmation.PasswordHash != null && userForConfirmation.PasswordSalt != null)
@@ -150,7 +150,7 @@ namespace LibrarySystem.Web.API.Controllers
                 {
                     if (passwordHash[index] != userForConfirmation.PasswordHash[index])
                     {
-                        return StatusCode(401, new { status = "success", message = "Incorrect password!" });
+                        return StatusCode(401, new { status = "error", message = "Incorrect password!" });
                     }
                 }
             }
@@ -254,6 +254,11 @@ namespace LibrarySystem.Web.API.Controllers
                     var userDb = _userRepository.GetUserByEmail(email);
                     var authdb = _userRepository.GetAuthByEmail(email);
 
+                    if(userDb.IsAdmin)
+                    {
+                        return BadRequest(new { status = "error", message = "Sorry...Admin Cannot delete an Admin" });
+                    }
+
                     _userRepository.RemoveEntity<User>(userDb);
                     _userRepository.RemoveEntity<Auth>(authdb);
                     if (_userRepository.SaveChangers())
@@ -261,7 +266,7 @@ namespace LibrarySystem.Web.API.Controllers
                         return Ok(new { status = "success", message = "User Deleted successfully." });
                     }
 
-                    return BadRequest(new { status = "error", message = "Failed to Delete User" });
+                    return BadRequest(new { status = "error", message = "This user is not registered" });
                 }
                 return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
             }
@@ -341,7 +346,9 @@ namespace LibrarySystem.Web.API.Controllers
             }
 
             _authService.RevokeToken(token);
-            return Ok(new { status = "success", message = "Logged out successfully" });
+
+            var userEmail = _authService.GetUserFromToken(token);
+            return Ok(new { status = "success", message = userEmail + " Logged out successfully"});
         }
 
     }
