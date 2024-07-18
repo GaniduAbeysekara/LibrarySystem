@@ -1,5 +1,6 @@
 ﻿using LibrarySystem.Data.DbContexts;
 using LibrarySystem.Data.Entities;
+using LibrarySystem.Web.API.Model;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -26,6 +27,11 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {
+                if (keyword.Length < 3)
+                {
+                    return BadRequest(new { status = "error", message = "The search keyword must be at least 3 characters long." });
+                }
+
                 try
                 {
                     var books = await _dataContext.Books.Where(b => b.ISBN.Contains(keyword) ||
@@ -63,50 +69,57 @@ namespace LibrarySystem.Web.API.Controllers
             }
         }
 
-        //create book
+
         [HttpPost("createbook")]
-        public async Task<IActionResult> Create([FromBody] Book book)
+        public async Task<IActionResult> Create([FromBody] BookForCreateDto bookForCreateDto)
         {
-            if (string.IsNullOrWhiteSpace(book.ISBN))
+            var errorResponse = ValidateBook(bookForCreateDto);
+            if (errorResponse != null)
             {
-                return BadRequest(new { status = "error", message = "The ISBN field is required." });
-            }
-
-            var (isValid, errorMessage) = ValidateISBN(book.ISBN);
-            if (!isValid)
-            {
-                return BadRequest(new { status = "error", message = errorMessage });
-            }
-
-            if (string.IsNullOrWhiteSpace(book.BookTitle))
-            {
-                return BadRequest(new { status = "error", message = "The Book Title field is required." });
-            }
-            if (string.IsNullOrWhiteSpace(book.Author))
-            {
-                return BadRequest(new { status = "error", message = "The Author field is required." });
+                return BadRequest(errorResponse);
             }
 
             try
             {
-                var existingBook = await _dataContext.Books.FirstOrDefaultAsync(b => b.ISBN == book.ISBN);
-                if (existingBook != null)
+                var existingBookWithSameTitleAndAuthor = await _dataContext.Books
+                    .FirstOrDefaultAsync(b => b.BookTitle == bookForCreateDto.BookTitle && b.Author == bookForCreateDto.Author && b.Description != bookForCreateDto.Description);
+
+                if (existingBookWithSameTitleAndAuthor != null)
+                {
+                    return Conflict(new { status = "error", message = "Please change the book title." });
+                }
+
+                var existingBookWithSameISBN = await _dataContext.Books
+                    .FirstOrDefaultAsync(b => b.ISBN == bookForCreateDto.ISBN);
+
+                if (existingBookWithSameISBN != null)
                 {
                     return Conflict(new { status = "error", message = "A book with the same ISBN already exists." });
                 }
 
                 var newBook = new Book
                 {
-                    ISBN = book.ISBN,
-                    BookTitle = book.BookTitle,
-                    Author = book.Author,
-                    Description = book.Description,
+                    ISBN = bookForCreateDto.ISBN,
+                    BookTitle = bookForCreateDto.BookTitle,
+                    Author = bookForCreateDto.Author,
+                    Description = bookForCreateDto.Description,
                 };
 
                 _dataContext.Books.Add(newBook);
                 await _dataContext.SaveChangesAsync();
 
-                return StatusCode(201, new { status = "success", book = newBook });
+                return StatusCode(201, new
+                {
+                    status = "success",
+                    message = "Book created successfully.",
+                    book = new
+                    {
+                        isbn = newBook.ISBN,
+                        bookTitle = newBook.BookTitle,
+                        author = newBook.Author,
+                        description = newBook.Description
+                    }
+                });
             }
             catch (Exception)
             {
@@ -142,33 +155,18 @@ namespace LibrarySystem.Web.API.Controllers
             }
         }
 
-        //edit book
-        //edit book
         [HttpPut("editbook/{isbn}")]
-        public async Task<IActionResult> Edit(string isbn, [FromBody] Book updatedBook)
+        public async Task<IActionResult> Edit(string isbn, [FromBody] BookForEditDto bookForEditDto)
         {
             if (string.IsNullOrWhiteSpace(isbn))
             {
                 return BadRequest(new { status = "error", message = "The ISBN parameter is required." });
             }
 
-            var (isValid, errorMessage) = ValidateISBN(updatedBook.ISBN);
-            if (!isValid)
+            var errorResponse = ValidateBook(bookForEditDto);
+            if (errorResponse != null)
             {
-                return BadRequest(new { status = "error", message = errorMessage });
-            }
-
-            if (string.IsNullOrWhiteSpace(updatedBook.BookTitle))
-            {
-                return BadRequest(new { status = "error", message = "The Book Title field is required." });
-            }
-            if (string.IsNullOrWhiteSpace(updatedBook.Author))
-            {
-                return BadRequest(new { status = "error", message = "The Author field is required." });
-            }
-            if (string.IsNullOrWhiteSpace(updatedBook.Description))
-            {
-                return BadRequest(new { status = "error", message = "The Description field is required." });
+                return BadRequest(errorResponse);
             }
 
             try
@@ -176,33 +174,34 @@ namespace LibrarySystem.Web.API.Controllers
                 var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
                 if (book == null)
                 {
-                    return NotFound(new { status = "error", message = "No books found matching the ISBN." });
+                    return NotFound(new { status = "error", message = "No book found matching the provided ISBN." });
                 }
 
-                // Ensure ISBN is not updated
-                if (updatedBook.ISBN != isbn)
+                var existingBookWithSameTitleAndAuthor = await _dataContext.Books
+                    .FirstOrDefaultAsync(b => b.BookTitle == bookForEditDto.BookTitle && b.Author == bookForEditDto.Author && b.Description != bookForEditDto.Description);
+
+                if (existingBookWithSameTitleAndAuthor != null)
                 {
-                    return BadRequest(new { status = "error", message = "The ISBN field cannot be updated." });
+                    return Conflict(new { status = "error", message = "Please change the book title." });
                 }
 
-                // Check for changes
                 bool isChanged = false;
 
-                if (book.BookTitle != updatedBook.BookTitle)
+                if (book.BookTitle != bookForEditDto.BookTitle)
                 {
-                    book.BookTitle = updatedBook.BookTitle;
+                    book.BookTitle = bookForEditDto.BookTitle;
                     isChanged = true;
                 }
 
-                if (book.Author != updatedBook.Author)
+                if (book.Author != bookForEditDto.Author)
                 {
-                    book.Author = updatedBook.Author;
+                    book.Author = bookForEditDto.Author;
                     isChanged = true;
                 }
 
-                if (book.Description != updatedBook.Description)
+                if (book.Description != bookForEditDto.Description)
                 {
-                    book.Description = updatedBook.Description;
+                    book.Description = bookForEditDto.Description;
                     isChanged = true;
                 }
 
@@ -212,14 +211,13 @@ namespace LibrarySystem.Web.API.Controllers
                 }
 
                 await _dataContext.SaveChangesAsync();
-                return Ok(new { status = "success", book });
+                return Ok(new { status = "success", message = "Book Updated successfully.", book });
             }
             catch (Exception)
             {
                 return StatusCode(500, new { status = "error", message = "Internal server error occurred." });
             }
         }
-
 
         private (bool isValid, string errorMessage) ValidateISBN(string isbn)
         {
@@ -232,6 +230,58 @@ namespace LibrarySystem.Web.API.Controllers
                 return (false, "ISBN cannot start with 0.");
             }
             return (true, string.Empty);
+        }
+
+        private object ValidateBook(BookForCreateDto bookForCreateDto)
+        {
+            if (string.IsNullOrWhiteSpace(bookForCreateDto.ISBN))
+            {
+                return new { status = "error", message = "The ISBN field is required." };
+            }
+
+            var (isValid, errorMessage) = ValidateISBN(bookForCreateDto.ISBN);
+            if (!isValid)
+            {
+                return new { status = "error", message = errorMessage };
+            }
+
+            if (string.IsNullOrWhiteSpace(bookForCreateDto.BookTitle))
+            {
+                return new { status = "error", message = "The Book Title field is required." };
+            }
+
+            if (string.IsNullOrWhiteSpace(bookForCreateDto.Author))
+            {
+                return new { status = "error", message = "The Author field is required." };
+            }
+
+            if (string.IsNullOrWhiteSpace(bookForCreateDto.Description))
+            {
+                return new { status = "error", message = "The Description field is required." };
+            }
+
+            return null;
+        }
+
+        private object ValidateBook(BookForEditDto bookForEditDto)
+        {
+
+            if (string.IsNullOrWhiteSpace(bookForEditDto.BookTitle))
+            {
+                return new { status = "error", message = "The Book Title field is required." };
+            }
+
+            if (string.IsNullOrWhiteSpace(bookForEditDto.Author))
+            {
+                return new { status = "error", message = "The Author field is required." };
+            }
+
+            if (string.IsNullOrWhiteSpace(bookForEditDto.Description))
+            {
+                return new { status = "error", message = "The Description field is required." };
+            }
+
+            return null;
         }
     }
 }

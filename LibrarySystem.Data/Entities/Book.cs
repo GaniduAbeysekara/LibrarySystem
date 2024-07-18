@@ -6,7 +6,7 @@ namespace LibrarySystem.Data.Entities
     public class Book
     {
         [Key]
-        [Required]
+        [Required]    
         public string ISBN { get; set; } = string.Empty;
 
         [Required]
