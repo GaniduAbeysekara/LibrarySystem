@@ -254,7 +254,12 @@ namespace LibrarySystem.Web.API.Controllers
                     var userDb = _userRepository.GetUserByEmail(email);
                     var authdb = _userRepository.GetAuthByEmail(email);
 
-                    if(userDb.IsAdmin)
+                    if (userDb == null)
+                    {
+                        return BadRequest(new { status = "error", message = email+" "+"This user is not registered" });
+                    }
+
+                    if (userDb.IsAdmin)
                     {
                         return BadRequest(new { status = "error", message = "Sorry...Admin Cannot delete an Admin" });
                     }
@@ -331,7 +336,7 @@ namespace LibrarySystem.Web.API.Controllers
                 }
             }
 
-            return BadRequest(new { status = "error", message = "Sorry ... Only Admin can View Users" });
+            return BadRequest(new { status = "error", message = "You do not have permission to access details of other users. " });
         }
 
 
