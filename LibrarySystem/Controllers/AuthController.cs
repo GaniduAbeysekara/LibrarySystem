@@ -276,7 +276,7 @@ namespace LibrarySystem.Web.API.Controllers
                 return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
             }
 
-            return BadRequest(new { status = "error", message = "Sorry..Only Admin Can delete Users.." });
+            return StatusCode(403, new { status = "forbidden", message = "You do not have permission to delete other users. " });
         }
 
 
@@ -336,7 +336,7 @@ namespace LibrarySystem.Web.API.Controllers
                 }
             }
 
-            return BadRequest(new { status = "error", message = "You do not have permission to access details of other users. " });
+            return StatusCode(403, new { status = "forbidden", message = "You do not have permission to access details of other users. " });
         }
 
 
