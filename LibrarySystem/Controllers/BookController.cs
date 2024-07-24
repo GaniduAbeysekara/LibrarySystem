@@ -136,6 +136,12 @@ namespace LibrarySystem.Web.API.Controllers
                 return BadRequest(new { status = "error", message = "ISBN cannot be null or empty." });
             }
 
+            var (isValid, errorMessage) = ValidateISBN(isbn);
+            if (!isValid)
+            {
+                return BadRequest(new { status = "error", message = errorMessage });
+            }
+
             try
             {
                 var book = await _dataContext.Books.FirstOrDefaultAsync(u => u.ISBN == isbn);
@@ -163,10 +169,10 @@ namespace LibrarySystem.Web.API.Controllers
                 return BadRequest(new { status = "error", message = "The ISBN parameter is required." });
             }
 
-            var errorResponse = ValidateBook(bookForEditDto);
-            if (errorResponse != null)
+            var (isValid, errorMessage) = ValidateISBN(isbn);
+            if (!isValid)
             {
-                return BadRequest(errorResponse);
+                return BadRequest(new { status = "error", message = errorMessage });
             }
 
             try
@@ -223,7 +229,7 @@ namespace LibrarySystem.Web.API.Controllers
         {
             if (!System.Text.RegularExpressions.Regex.IsMatch(isbn, @"^\d{1,13}$"))
             {
-                return (false, "ISBN must be a number with 1 to 13 digits.");
+                return (false, "The ISBN you provided is in an invalid format. Please ensure the ISBN is a 1 to 13-digit integer and try again.");
             }
             if (System.Text.RegularExpressions.Regex.IsMatch(isbn, @"^0"))
             {
