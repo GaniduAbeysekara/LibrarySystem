@@ -1,10 +1,17 @@
-﻿using System.ComponentModel;
+﻿using Microsoft.AspNetCore.Mvc;
+using Swashbuckle.AspNetCore.Annotations;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 
 namespace LibrarySystem.Web.API.Model
 {
     public class UserForRegistrationDto
     {
+
+        //[DisplayName("User ID")]
+        //[SwaggerSchema(ReadOnly = true)]
+        //public string UserId { get; } = string.Empty;
+
         //[EmailAddress]
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
