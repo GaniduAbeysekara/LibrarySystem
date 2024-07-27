@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace LibrarySystem.Data.Entities
 {
@@ -35,10 +36,12 @@ namespace LibrarySystem.Data.Entities
         [DataType(DataType.PhoneNumber)]
         public string PhoneNumber { get; set; } = string.Empty;
 
+        [JsonIgnore]
         [Required]
         [MaxLength(5)]
         public bool IsDelete { get; set; } = false;
 
+        [JsonIgnore]
         [Required]
         [MaxLength(5)]
         public bool IsAdmin { get; set; } = false;

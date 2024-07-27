@@ -20,6 +20,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
         private IUserRepository _userRepository;
         private IMapper _mapper;
         private readonly IConfiguration _config;
+
         public AuthService(IUserRepository userRepository, IConfiguration config)
         {
             _userRepository = userRepository;

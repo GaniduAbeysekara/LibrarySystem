@@ -46,6 +46,11 @@ namespace LibrarySystem.Data.Repository.Infrastructure
         }
 
 
+        public User GetUserById(int id)
+        {
+            User? user = _dataContext.Users.Where(u => u.UserId == id).FirstOrDefault<User>();
+            return user;
+        }
     }
 
 }

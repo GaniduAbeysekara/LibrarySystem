@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Cryptography;
+using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace LibrarySystem.Web.API.Controllers
 {
@@ -101,7 +102,7 @@ namespace LibrarySystem.Web.API.Controllers
 
                         if (_userRepository.SaveChangers())
                         {
-                            return StatusCode(201, new { status = "success", message = "User created successfully.",userForRegistration });
+                            return StatusCode(201, new { status = "success", message = "User created successfully.",userDb });
                         }
                         return StatusCode(500, new { status = "error", message = "Failed to register user." });
                     }
@@ -241,39 +242,49 @@ namespace LibrarySystem.Web.API.Controllers
 
 
         [HttpDelete("DeleteUser")]
-        public IActionResult DeleteUser(string email)
+        public async Task<IActionResult> DeleteUser(int id)
         {
             var accessToken = HttpContext.GetTokenAsync(JwtBearerDefaults.AuthenticationScheme, "access_token").Result;
             var userStatus = _authService.GetStatusFromToken(accessToken);
 
             if (userStatus != false)
-
-            {
-                if (_authService.GetUserFromToken(accessToken) != email)
+            {              
+                var user = _userRepository.GetUserById(id);
+                var email = "";
+                if (user != null)
                 {
-                    var userDb = _userRepository.GetUserByEmail(email);
-                    var authdb = _userRepository.GetAuthByEmail(email);
-
-                    if (userDb == null)
-                    {
-                        return BadRequest(new { status = "error", message = email+" "+"This user is not registered" });
-                    }
-
-                    if (userDb.IsAdmin)
-                    {
-                        return BadRequest(new { status = "error", message = "Sorry...Admin Cannot delete an Admin" });
-                    }
-
-                    _userRepository.RemoveEntity<User>(userDb);
-                    _userRepository.RemoveEntity<Auth>(authdb);
-                    if (_userRepository.SaveChangers())
-                    {
-                        return Ok(new { status = "success", message = "User Deleted successfully." });
-                    }
-
-                    return BadRequest(new { status = "error", message = "This user is not registered" });
+                    email = user.Email;
                 }
-                return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
+           
+                if (email != null)
+                {
+                    if (_authService.GetUserFromToken(accessToken) != email)
+                    {
+                        var userDb = _userRepository.GetUserByEmail(email);
+                        var authdb = _userRepository.GetAuthByEmail(email);
+
+                        if (userDb == null)
+                        {
+                            return BadRequest(new { status = "error", message = email + " " + "This user is not registered" });
+                        }
+
+                        if (userDb.IsAdmin)
+                        {
+                            return BadRequest(new { status = "error", message = "Sorry...Admin Cannot delete an Admin" });
+                        }
+
+                        _userRepository.RemoveEntity<User>(userDb);
+                        _userRepository.RemoveEntity<Auth>(authdb);
+                        if (_userRepository.SaveChangers())
+                        {
+                            return Ok(new { status = "success", message = "User"+" "+id+" "+"Deleted successfully." });
+                        }
+
+                        return BadRequest(new { status = "error", message = "This user is not registered" });
+                    }
+                    return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
+                }
+                return BadRequest(new { status = "error", message ="This user with User ID"+" "+ id +" "+ "is not registered" });
             }
 
             return StatusCode(403, new { status = "forbidden", message = "You do not have permission to delete other users. " });
