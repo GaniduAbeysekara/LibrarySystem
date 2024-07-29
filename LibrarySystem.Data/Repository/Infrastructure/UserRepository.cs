@@ -1,7 +1,8 @@
-﻿using AutoMapper;
-using LibrarySystem.Data.DbContexts;
+﻿using LibrarySystem.Data.DbContexts;
 using LibrarySystem.Data.Entities;
 using LibrarySystem.Data.Repository.Interface;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace LibrarySystem.Data.Repository.Infrastructure
 {
@@ -50,6 +51,31 @@ namespace LibrarySystem.Data.Repository.Infrastructure
         {
             User? user = _dataContext.Users.Where(u => u.UserId == id).FirstOrDefault<User>();
             return user;
+        }
+
+
+        public List<User> SearchUsers(string searchTerm = null)
+        {
+            // If no searchTerm is provided, return all users
+            if (string.IsNullOrWhiteSpace(searchTerm))
+            {               
+                return _dataContext.Users.Where(a => a.IsAdmin == false).ToList();
+            }
+
+            // Normalize searchTerm
+            searchTerm = searchTerm.Trim().ToLower();
+
+            // Search based on provided searchTerm
+            var query = _dataContext.Users.AsQueryable();
+
+            query = query.Where(u => u.UserId.ToString() == searchTerm ||
+                                     u.FirstName.ToLower().Contains(searchTerm) ||
+                                     u.LastName.ToLower().Contains(searchTerm) ||
+                                     u.PhoneNumber.Contains(searchTerm) ||
+                                     u.Gender.ToLower().Contains(searchTerm) &&
+                                     !u.IsAdmin);
+
+            return query.ToList();
         }
     }
 

@@ -1,4 +1,5 @@
 ﻿using LibrarySystem.Data.Entities;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LibrarySystem.Data.Repository.Interface
 {
@@ -12,5 +13,7 @@ namespace LibrarySystem.Data.Repository.Interface
         public User GetUserById(int Id);
 
         public Auth GetAuthByEmail(string email);
+
+        List<User> SearchUsers(string searchTerm = null);
     }
 }
