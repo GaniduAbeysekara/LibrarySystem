@@ -40,9 +40,9 @@ namespace LibrarySystem.Data.DbContexts
                     UserId = 1,
                     Email = "admin@email.com",
                     FirstName = "Admin",
-                    LastName = "1",
+                    LastName = "Admin",
                     Gender = "Male",
-                    PhoneNumber = "0123456789",
+                    PhoneNumber = "0000000000",
                     IsDelete = false,
                     IsAdmin = true
                 }
