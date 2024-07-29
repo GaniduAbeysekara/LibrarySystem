@@ -249,23 +249,18 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (userStatus != false)
             {              
-                var user = _userRepository.GetUserById(id);
-                var email = "";
-                if (user != null)
-                {
-                    email = user.Email;
-                }
+                var user = _userRepository.GetUserById(id);               
            
-                if (email != null)
+                if (user != null && id.ToString().Length < 10 )
                 {
-                    if (_authService.GetUserFromToken(accessToken) != email)
+                    if (_authService.GetUserFromToken(accessToken) != user.Email)
                     {
-                        var userDb = _userRepository.GetUserByEmail(email);
-                        var authdb = _userRepository.GetAuthByEmail(email);
+                        var userDb = _userRepository.GetUserByEmail(user.Email);
+                        var authdb = _userRepository.GetAuthByEmail(user.Email);
 
                         if (userDb == null)
                         {
-                            return BadRequest(new { status = "error", message = email + " " + "This user is not registered" });
+                            return BadRequest(new { status = "error", message = "User deletion requires a Valid User ID." });
                         }
 
                         if (userDb.IsAdmin)
@@ -284,7 +279,7 @@ namespace LibrarySystem.Web.API.Controllers
                     }
                     return BadRequest(new { status = "error", message = "Unable to delete account. You cannot delete your own account." });
                 }
-                return BadRequest(new { status = "error", message ="This user with User ID"+" "+ id +" "+ "is not registered" });
+                return BadRequest(new { status = "error", message = "User deletion requires a Valid User ID." });
             }
 
             return StatusCode(403, new { status = "forbidden", message = "You do not have permission to delete other users. " });
@@ -292,65 +287,58 @@ namespace LibrarySystem.Web.API.Controllers
 
 
 
+
+
+    
         // search Users by Email, First name, Last Name, Phone Number,Gender
         [HttpGet("GetUsers")]
-        public async Task<IActionResult> SearchUser()
+        public IActionResult Search()
         {
             var accessToken = HttpContext.GetTokenAsync(JwtBearerDefaults.AuthenticationScheme, "access_token").Result;
             var userStatus = _authService.GetStatusFromToken(accessToken);
 
             if (userStatus)
             {
-                string keyword = HttpContext.Request.Query["Search"].ToString();
+            string keyword = HttpContext.Request.Query["Search"].ToString();
 
-                if (!string.IsNullOrWhiteSpace(keyword))
+             
+                if (int.TryParse(keyword, out int id))
                 {
-                    try
+                    if (Convert.ToInt32(keyword) != 1)
                     {
-                        var users = await _dataContext.Users.Where(b => b.Email.Contains(keyword) ||
-                            b.FirstName.Contains(keyword) ||
-                            b.LastName.Contains(keyword) ||
-                            b.Gender.Contains(keyword) ||
-                            b.PhoneNumber.Contains(keyword) &&
-                            b.IsAdmin == false)
-                           .ToListAsync();
+                    var users = _userRepository.SearchUsers(keyword);
 
-                        if (users == null || !users.Any())
-                        {
-                            return BadRequest(new { status = "error", message = "No User/Users found matching the keyword." });
-                        }
-
-                        return Ok(users);
-                    }
-                    catch (Exception ex)
+                    if (users == null || !users.Any())
                     {
-
-                        return BadRequest(new { status = "error", message = "Internal server error. Please try again later." });
+                        return Ok(new { status = "success", message = "No Users available." });
                     }
+                    return Ok(users);
+
+                    }
+                    return Ok(new { status = "success", message = "No Users available." });
                 }
-
                 else
                 {
-                    try
+
+                    if (keyword.Length >= 3 || keyword == "")
                     {
-                        var users = await _dataContext.Users.Where(a=>a.IsAdmin==false).ToListAsync();
+                        var users = _userRepository.SearchUsers(keyword);
+
                         if (users == null || !users.Any())
                         {
                             return Ok(new { status = "success", message = "No Users available." });
                         }
                         return Ok(users);
                     }
-                    catch (Exception ex)
-                    {
-                        return BadRequest(new { status = "error", message = "Internal server error. Please try again later." });
-                    }
-                }
-            }
 
+                    return StatusCode(403, new { status = "forbidden", message = "Aleast input 3 characters to Search " });
+                }
+
+
+
+            }
             return StatusCode(403, new { status = "forbidden", message = "You do not have permission to access details of other users. " });
         }
-
-
 
         [HttpPost("logout")]
         public IActionResult Logout()
