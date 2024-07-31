@@ -309,12 +309,21 @@ namespace LibrarySystem.Web.API.Controllers
                         var users = _userRepository.SearchUsersSpefically(searchCriteria.FirstName, searchCriteria.LastName, searchCriteria.Email, searchCriteria.PhoneNumber, searchCriteria.Gender, searchCriteria.UserId);
 
 
-                        if (users == null || !users.Any())
+                        if (searchCriteria.FirstName.Length > 3 || searchCriteria.LastName.Length > 3 || searchCriteria.Email.Length > 3
+                            ||searchCriteria.PhoneNumber.Length > 3|| searchCriteria.Gender.Length > 3)
                         {
-                            return Ok(new { status = "error", message = "No User/Users found matching the keyword." });
+                            if (users == null || !users.Any())
+                            {
+                                return Ok(new { status = "error", message = "No User/Users found matching the keyword." });
+                            }
+                            return Ok(users);
                         }
-                        return Ok(users);
-                    }else
+
+                            return BadRequest(new { status = "error", message = "Search Using 3 or more characters" });                   
+
+                    }
+
+                    else
                     {
                         var users = await _dataContext.Users.Where(a => a.IsAdmin == false).ToListAsync();
                         if (users == null || !users.Any())
@@ -323,7 +332,12 @@ namespace LibrarySystem.Web.API.Controllers
                         }
                         return Ok(users);
 
+
+
                     }
+
+                   
+
 
                 }
                 catch (Exception)
