@@ -2,6 +2,7 @@
 using LibrarySystem.Data.Entities;
 using LibrarySystem.Data.Repository.Interface;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection;
 
 
 namespace LibrarySystem.Data.Repository.Infrastructure
@@ -77,6 +78,38 @@ namespace LibrarySystem.Data.Repository.Infrastructure
 
             return query.ToList();
         }
+
+
+        public IEnumerable<User> SearchUsersSpefically(string firstName = null, string lastName = null, string email = null, string phoneNumber = null, string gender = null, int? UserId = null)
+        {
+            var query = _dataContext.Users.AsQueryable();
+
+            //if (UserId.HasValue) // Assuming UserId is nullable int (int?)
+            //    query = query.Where(u => u.UserId == UserId.Value );
+
+            if (!string.IsNullOrEmpty(firstName) || !string.IsNullOrEmpty(lastName))
+            {
+                query = query.Where(u =>
+                    (!string.IsNullOrEmpty(firstName) && u.FirstName.Contains(firstName) && u.IsAdmin ==false) ||
+                    (!string.IsNullOrEmpty(lastName) && u.LastName.Contains(lastName) && u.IsAdmin == false)
+                );
+            }
+
+            if (!string.IsNullOrEmpty(email))
+                query = query.Where(u => u.Email.Contains(email) && u.IsAdmin==false);
+
+            if (!string.IsNullOrEmpty(phoneNumber))
+                query = query.Where(u => u.PhoneNumber.Contains(phoneNumber) && u.IsAdmin == false);
+
+
+            if (!string.IsNullOrEmpty(gender))
+                query = query.Where(u => u.Gender.Contains(gender) && u.IsAdmin == false);
+
+
+
+            return query.ToList();
+        }
+
     }
 
 }
