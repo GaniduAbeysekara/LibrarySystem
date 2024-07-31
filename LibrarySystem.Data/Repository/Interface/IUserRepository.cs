@@ -1,5 +1,6 @@
 ﻿using LibrarySystem.Data.Entities;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace LibrarySystem.Data.Repository.Interface
 {
@@ -15,5 +16,11 @@ namespace LibrarySystem.Data.Repository.Interface
         public Auth GetAuthByEmail(string email);
 
         List<User> SearchUsers(string searchTerm = null);
+
+
+        public IEnumerable<User> SearchUsersSpefically(string firstName = null, string lastName = null, string email = null, string phoneNumber = null, string gender = null, int? userId = null);
+
+
+
     }
 }

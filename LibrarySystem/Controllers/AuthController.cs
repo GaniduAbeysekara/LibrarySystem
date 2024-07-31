@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using LibrarySystem.Data.DbContexts;
 using LibrarySystem.Data.Entities;
+using LibrarySystem.Data.Repository.Infrastructure;
 using LibrarySystem.Data.Repository.Interface;
 using LibrarySystem.Web.API.Model;
 using LibrarySystem.Web.API.Services.Interface;
@@ -9,8 +10,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.Security.Cryptography;
-using static Microsoft.Extensions.Logging.EventSource.LoggingEventSource;
 
 namespace LibrarySystem.Web.API.Controllers
 {
@@ -289,56 +290,57 @@ namespace LibrarySystem.Web.API.Controllers
 
 
 
-    
         // search Users by Email, First name, Last Name, Phone Number,Gender
         [HttpGet("GetUsers")]
-        public IActionResult Search()
+        public async Task<IActionResult> Search([FromQuery] string? criteria)
         {
             var accessToken = HttpContext.GetTokenAsync(JwtBearerDefaults.AuthenticationScheme, "access_token").Result;
             var userStatus = _authService.GetStatusFromToken(accessToken);
 
             if (userStatus)
             {
-            string keyword = HttpContext.Request.Query["Search"].ToString();
 
-             
-                if (int.TryParse(keyword, out int id))
+                try
                 {
-                    if (Convert.ToInt32(keyword) != 1)
+                    if (criteria != null)
                     {
-                    var users = _userRepository.SearchUsers(keyword);
+                        // Deserialize the JSON criteria
+                        var searchCriteria = JsonConvert.DeserializeObject<User>(criteria);
+                        var users = _userRepository.SearchUsersSpefically(searchCriteria.FirstName, searchCriteria.LastName, searchCriteria.Email, searchCriteria.PhoneNumber, searchCriteria.Gender, searchCriteria.UserId);
 
-                    if (users == null || !users.Any())
+
+                        if (users == null || !users.Any())
+                        {
+                            return Ok(new { status = "error", message = "No User/Users found matching the keyword." });
+                        }
+                        return Ok(users);
+                    }else
                     {
-                        return Ok(new { status = "success", message = "No Users available." });
-                    }
-                    return Ok(users);
-
-                    }
-                    return Ok(new { status = "success", message = "No Users available." });
-                }
-                else
-                {
-
-                    if (keyword.Length >= 3 || keyword == "")
-                    {
-                        var users = _userRepository.SearchUsers(keyword);
-
+                        var users = await _dataContext.Users.Where(a => a.IsAdmin == false).ToListAsync();
                         if (users == null || !users.Any())
                         {
                             return Ok(new { status = "success", message = "No Users available." });
                         }
                         return Ok(users);
+
                     }
 
-                    return StatusCode(403, new { status = "forbidden", message = "Aleast input 3 characters to Search " });
                 }
+                catch (Exception)
+                {
 
+                    return StatusCode(500, new { status = "error", message = "Internal server error. Please try again later." });
+                }
+            
+
+              
 
 
             }
             return StatusCode(403, new { status = "forbidden", message = "You do not have permission to access details of other users. " });
         }
+
+
 
         [HttpPost("logout")]
         public IActionResult Logout()
