@@ -309,8 +309,8 @@ namespace LibrarySystem.Web.API.Controllers
                         var users = _userRepository.SearchUsersSpefically(searchCriteria.FirstName, searchCriteria.LastName, searchCriteria.Email, searchCriteria.PhoneNumber, searchCriteria.Gender, searchCriteria.UserId);
 
 
-                        if (searchCriteria.FirstName.Length > 3 || searchCriteria.LastName.Length > 3 || searchCriteria.Email.Length > 3
-                            ||searchCriteria.PhoneNumber.Length > 3|| searchCriteria.Gender.Length > 3)
+                        if (searchCriteria.FirstName.Length >= 3 || searchCriteria.LastName.Length >= 3 || searchCriteria.Email.Length >= 3
+                            ||searchCriteria.PhoneNumber.Length >= 3|| searchCriteria.Gender.Length >= 3)
                         {
                             if (users == null || !users.Any())
                             {
