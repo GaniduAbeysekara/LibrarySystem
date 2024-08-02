@@ -27,17 +27,21 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {
-                if (keyword.Length < 3)
+                bool isISBN = System.Text.RegularExpressions.Regex.IsMatch(keyword, @"^\d{1,13}$");
+
+                if (!isISBN && keyword.Length < 3)
                 {
                     return BadRequest(new { status = "error", message = "The search keyword must be at least 3 characters long." });
                 }
 
                 try
                 {
-                    var books = await _dataContext.Books.Where(b => b.ISBN.Contains(keyword) ||
-                        b.BookTitle.Contains(keyword) ||
-                        b.Author.Contains(keyword) ||
-                        b.Description.Contains(keyword)).ToListAsync();
+                    var books = await _dataContext.Books.Where(b =>
+                        b.ISBN.Contains(keyword) ||
+                        (!isISBN && (b.BookTitle.Contains(keyword) ||
+                                     b.Author.Contains(keyword) ||
+                                     b.Description.Contains(keyword)))
+                    ).ToListAsync();
 
                     if (books == null || !books.Any())
                     {
@@ -68,6 +72,7 @@ namespace LibrarySystem.Web.API.Controllers
                 }
             }
         }
+
 
 
         [HttpPost("createbook")]
@@ -161,6 +166,7 @@ namespace LibrarySystem.Web.API.Controllers
             }
         }
 
+        //edit book details
         [HttpPut("editbook/{isbn}")]
         public async Task<IActionResult> Edit(string isbn, [FromBody] BookForEditDto bookForEditDto)
         {
@@ -173,6 +179,12 @@ namespace LibrarySystem.Web.API.Controllers
             if (!isValid)
             {
                 return BadRequest(new { status = "error", message = errorMessage });
+            }
+
+            var validationError = ValidateBook(bookForEditDto);
+            if (validationError != null)
+            {
+                return BadRequest(validationError);
             }
 
             try
@@ -224,6 +236,9 @@ namespace LibrarySystem.Web.API.Controllers
                 return StatusCode(500, new { status = "error", message = "Internal server error occurred." });
             }
         }
+
+       
+
 
         private (bool isValid, string errorMessage) ValidateISBN(string isbn)
         {
