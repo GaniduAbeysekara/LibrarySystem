@@ -10,7 +10,7 @@ namespace LibrarySystem.Data.Entities
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         [Key]
         [Column(Order = 1)]
-        public int UserId { get; set; }
+        public int? UserId { get; set; }
 
         [Key]
         [Column(Order = 2)]

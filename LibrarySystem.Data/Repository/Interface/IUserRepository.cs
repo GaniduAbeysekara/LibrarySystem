@@ -6,21 +6,14 @@ namespace LibrarySystem.Data.Repository.Interface
 {
     public interface IUserRepository
     {
-        public bool SaveChangers();
-        public void AddEntity<T>(T entityToAdd);
-        public void RemoveEntity<T>(T entityToAdd);
-        public User GetUserByEmail(string userName);
-
-        public User GetUserById(int Id);
-
-        public Auth GetAuthByEmail(string email);
-
-        List<User> SearchUsers(string searchTerm = null);
-
-
-        public IEnumerable<User> SearchUsersSpefically(string firstName = null, string lastName = null, string email = null, string phoneNumber = null, string gender = null, int? userId = null);
-
-
+        public  Task<bool> SaveChangersAsync();
+        public Task AddEntityAsync<T>(T entityToAdd);
+        public Task RemoveEntityAsync<T>(T entityToAdd);
+        public Task<Auth> GetAuthByEmailAsync(string email);
+        public Task<User> GetUserByEmailAsync(string email);
+        public Task<User> GetUserByIdAsync(int id);
+        public Task<IEnumerable<User>> GetAllUsersAsync(string email);
+        public IEnumerable<User> SearchUsersSpefically(User user, string email);
 
     }
 }
