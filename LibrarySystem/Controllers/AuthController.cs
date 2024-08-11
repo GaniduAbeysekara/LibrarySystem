@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using AutoMapper.Internal;
+using LibrarySystem.Web.API.Helpers;
 using LibrarySystem.Data.Entities;
 using LibrarySystem.Data.Repository.Interface;
 using LibrarySystem.Web.API.Model;
@@ -62,9 +63,9 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (await _userRepository.SaveChangersAsync())
             {
-                return StatusCode(201, new { status = "success", message = "User created successfully.", userDb });
+                return StatusCode(201, new { status = "success", message = ResponseMessagesHelper.UserCreatedSuccess, userDb });
             }
-            return StatusCode(500, new { status = "error", message = "Failed to register user." });
+            return StatusCode(500, new { status = "error", message = ResponseMessagesHelper.UserRegistrationFailed });
         }
 
 
@@ -85,7 +86,7 @@ namespace LibrarySystem.Web.API.Controllers
             return Ok(new
             {
                 status = "success",
-                message = "Logged in Successfully",
+                message = ResponseMessagesHelper.LoggedInSuccessfully,
                 token = _authService.CreateToken(userForLogin.Email, userDetails.IsAdmin)
             });
         }
@@ -114,13 +115,13 @@ namespace LibrarySystem.Web.API.Controllers
             var email = await _authService.GetEmailFromAccessTokenAsync(HttpContext);
             if (string.IsNullOrEmpty(email))
             {
-                return Unauthorized(new { status = "error", message = "Invalid token" });
+                return Unauthorized(new { status = "error", message = ResponseMessagesHelper.InvalidToken });
             }
 
             var userDb = await _userRepository.GetUserByEmailAsync(email);
             if (userDb == null)
             {
-                return NotFound(new { status = "error", message = "This user does not exist" });
+                return NotFound(new { status = "error", message = ResponseMessagesHelper.UserNotExist });
             }
 
             // List to track updated fields
@@ -151,7 +152,7 @@ namespace LibrarySystem.Web.API.Controllers
             }
 
             var responseMessage = updatedFields.Count > 0 ? $"Updated fields: {string.Join(", ", updatedFields)}"
-                                                          : "No fields were updated.";
+                                                          : ResponseMessagesHelper.NoFieldsUpdated;
 
             if (await _userRepository.SaveChangersAsync())
             {
@@ -169,7 +170,7 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (!userStatus)
             {
-                return StatusCode(403, new { status = "forbidden", message = "You do not have permission to delete other users." });
+                return StatusCode(403, new { status = "forbidden", message = ResponseMessagesHelper.ForbiddenDelete });
             }
 
             var validationResult = await _authService.ValidateUserForDeleteAsync(id, HttpContext);
@@ -188,7 +189,7 @@ namespace LibrarySystem.Web.API.Controllers
                 return Ok(new { status = "success", message = "User " + id + " deleted successfully." });
             }
 
-            return BadRequest(new { status = "error", message = "This user is not registered" });
+            return BadRequest(new { status = "error", message = ResponseMessagesHelper.UserNotRegistered });
 
         }
 
@@ -204,7 +205,7 @@ namespace LibrarySystem.Web.API.Controllers
 
             if (!userStatus)
             {
-                return StatusCode(403, new { status = "forbidden", message = "You do not have permission to access details of other users." });
+                return StatusCode(403, new { status = "forbidden", message = ResponseMessagesHelper.ForbiddenAccess });
             }
             try
             {
@@ -213,7 +214,7 @@ namespace LibrarySystem.Web.API.Controllers
                     var allUsers = await _userRepository.GetAllUsersAsync(email);
                     if (allUsers == null || !allUsers.Any())
                     {
-                        return Ok(new { status = "success", message = "No Users available." });
+                        return Ok(new { status = "success", message = ResponseMessagesHelper.NoUsersAvailable });
                     }
                     return Ok(allUsers);
                 }
@@ -230,7 +231,7 @@ namespace LibrarySystem.Web.API.Controllers
 
                 if (!SearchUsers.Any())
                 {
-                    return Ok(new { status = "error", message = "No User/Users found matching the keyword." });
+                    return Ok(new { status = "error", message = ResponseMessagesHelper.NoUserFound });
                 }
                 return Ok(SearchUsers);
 
@@ -238,7 +239,7 @@ namespace LibrarySystem.Web.API.Controllers
             catch (Exception ex)
             {
                 // Log exception (ex) here if needed
-                return StatusCode(500, new { status = "error", message = "Internal server error. Please try again later." });
+                return StatusCode(500, new { status = "error", message = ResponseMessagesHelper.InternalServerError });
             }
         }
 
@@ -248,13 +249,13 @@ namespace LibrarySystem.Web.API.Controllers
             var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", string.Empty);
             if (string.IsNullOrEmpty(token))
             {
-                return BadRequest(new { status = "error", message = "Token is required." });
+                return BadRequest(new { status = "error", message = ResponseMessagesHelper.TokenRequired });
             }
 
             await _authService.RevokeTokenAsync(token);
 
             var emailFromToken = await _authService.GetEmailFromAccessTokenAsync(HttpContext);
-            return Ok(new { status = "success", message = $"{emailFromToken} Logged out successfully" });
+            return Ok(new { status = "success", message = $"{emailFromToken} ",ResponseMessagesHelper.LoggedOutSuccessfully});
         }
 
     }
