@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using LibrarySystem.Data.Entities;
 using LibrarySystem.Data.Repository.Interface;
+using LibrarySystem.Web.API.Helpers;
 using LibrarySystem.Web.API.Model;
 using LibrarySystem.Web.API.Services.Interface;
 using Microsoft.AspNetCore.Authentication;
@@ -12,6 +13,7 @@ using System.ComponentModel;
 using System.IdentityModel.Tokens.Jwt;
 using System.Reflection;
 using System.Security.Claims;
+using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -139,32 +141,32 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
                 var emailCheck = userForRegistration.Email.ToString();
                 if (emailCheck.ToLower() != emailCheck)
                 {
-                    return (false, "Please enter a valid email address in lower case");
+                    return (false, ResponseMessagesHelper.EnterLowerCaseEmail);
                 }
-                return (false, "Please enter a valid Email Address!");
+                return (false, ResponseMessagesHelper.EnterValiedEmail);
             }
 
             bool isValidPhoneNum = IsValidPhoneNo(userForRegistration.PhoneNumber);
             if (!isValidPhoneNum)
             {
-                return (false, "Please enter a valid Phone Number!");
+                return (false, ResponseMessagesHelper.EnterValiedPhoneNumber);
             }
 
             bool isValidPass = IsValidPassword(userForRegistration.Password);
             if (!isValidPass)
             {
-                return (false, "Password must be at least 8 to 15 characters. It contains at least one Upper case, Lower Case, numbers, and Special Characters.");
+                return (false, ResponseMessagesHelper.EnterValiedPassword);
             }
 
             if (userForRegistration.Password != userForRegistration.PasswordConfirm)
             {
-                return (false, "Passwords do not match!");
+                return (false, ResponseMessagesHelper.PasswordNotMatch);
             }
 
             User existingUser = await _userRepository.GetUserByEmailAsync(userForRegistration.Email);
             if (existingUser != null)
             {
-                return (false, "User with this email already exists.");
+                return (false, ResponseMessagesHelper.EmailAlreadyExists);
             }
 
             return (true, null);
@@ -185,10 +187,10 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
                 if (emailCheck.ToLower() != emailCheck)
                 {
-                    return ("badRequest", "Please enter a valid email address in lower case"); // Email contains uppercase letters
+                    return ("badRequest", ResponseMessagesHelper.EnterLowerCaseEmail); // Email contains uppercase letters
                 }
 
-                return ("badRequest", "Please enter a valid Email Address");
+                return ("badRequest", ResponseMessagesHelper.EnterValiedEmail);
             }
 
             User userDetails = await _userRepository.GetUserByEmailAsync(userForLogin.Email);
@@ -196,7 +198,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
             if (userForConfirmation == null)
             {
-                return ("unauthorized", "This email is not registered");
+                return ("unauthorized", ResponseMessagesHelper.EmailNotRegistered);
             }
 
             byte[] passwordHash = GetPasswordHash(userForLogin.Password, userForConfirmation.PasswordSalt);
@@ -205,7 +207,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
             {
                 if (passwordHash[index] != userForConfirmation.PasswordHash[index])
                 {
-                    return ("unauthorized", "Incorrect password!" );
+                    return ("unauthorized", ResponseMessagesHelper.IncorrectPassword);
                 }
             }
 
@@ -225,7 +227,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
             bool isValidPhoneNum = IsValidPhoneNo(userForEdit.PhoneNumber);
             if (!isValidPhoneNum)
             {
-                return (false, "Please enter a valid Phone Number!");
+                return (false, ResponseMessagesHelper.EnterValiedPhoneNumber);
             }
 
             return (true, null);
@@ -240,17 +242,17 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
             if (user == null)
             {
-                return (false, "User deletion requires a valid User ID.");
+                return (false, ResponseMessagesHelper.InvalidUserId);
             }
 
             if (emailFromToken == user.Email)
             {
-                return (false, "Unable to delete account. You cannot delete your own account.");
+                return (false, ResponseMessagesHelper.UnableToDeleteOwnAccount);
             }
 
             if (user.IsAdmin)
             {
-                return (false, "Sorry...Admin cannot delete an Admin");
+                return (false, ResponseMessagesHelper.UnableToDeleteAdminAccount);
             }
 
             return (true, null);
@@ -260,7 +262,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
         {
             if (model == null)
             {
-                return (false, "The request body is missing.");
+                return (false, ResponseMessagesHelper.RequestBodyMissing);
             }
 
             var properties = model.GetType().GetProperties();
@@ -292,7 +294,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
             if (searchCriteria == null)
             {
-                return (false, "Invalid search criteria format.");
+                return (false, ResponseMessagesHelper.InvalidSearchCriteria);
             }
 
             if (searchCriteria.FirstName.Length >= 3 || searchCriteria.LastName.Length >= 3 || searchCriteria.Email.Length >= 3
@@ -301,7 +303,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
                 return (true, searchCriteria);
 
             }
-            return (false, "Search Using 3 or more characters");
+            return (false, ResponseMessagesHelper.SearchCharacters);
 
         }
 
@@ -314,7 +316,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
             {
                 //string emailPattern = @"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$";
 
-                string emailPattern = @"^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$";
+                string emailPattern = RegexPatterHelper.emailPattern;
 
                 Regex regex = new Regex(emailPattern);
                 return regex.IsMatch(email);
@@ -333,7 +335,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
             try
             {
-                string phoneNoPattern = @"^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$";
+                string phoneNoPattern = RegexPatterHelper.phoneNoPattern;
 
                 Regex regex = new Regex(phoneNoPattern);
                 return regex.IsMatch(phoneNo);
@@ -352,7 +354,7 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
             try
             {
-                string passwordPattern = "^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$";
+                string passwordPattern = RegexPatterHelper.passwordPattern;
 
                 Regex regex = new Regex(passwordPattern);
                 return regex.IsMatch(password);
