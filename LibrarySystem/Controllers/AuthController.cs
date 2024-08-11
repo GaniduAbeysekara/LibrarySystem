@@ -196,7 +196,7 @@ namespace LibrarySystem.Web.API.Controllers
 
 
         // search Users by Email, First name, Last Name, Phone Number,Gender
-        [HttpPost("GetUsers")]
+        [HttpGet("GetUsers")]
         public async Task<IActionResult> Search([FromQuery] string? criteria)
         {
             var userStatus = await _authService.GetUserStatusFromTokenAsync(HttpContext);
