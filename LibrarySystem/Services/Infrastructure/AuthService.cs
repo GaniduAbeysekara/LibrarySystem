@@ -170,12 +170,12 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
             return (true, null);
         }
 
-        public async Task<(bool, string)> ValidateUserForLoginAsync(UserForLoginDto userForLogin)
+        public async Task<(string, string)> ValidateUserForLoginAsync(UserForLoginDto userForLogin)
         {
             var validationResult = ValidateObjectNotNullOrEmpty(userForLogin);
             if (!validationResult.Item1)
             {
-                return (validationResult.Item1, validationResult.Item2);
+                return ("badRequest", validationResult.Item2);
             }
 
             bool isValidEmail = IsValidEmail(userForLogin.Email);
@@ -185,10 +185,10 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
                 if (emailCheck.ToLower() != emailCheck)
                 {
-                    return (false, "Please enter a valid email address in lower case"); // Email contains uppercase letters
+                    return ("badRequest", "Please enter a valid email address in lower case"); // Email contains uppercase letters
                 }
 
-                return (false, "Please enter a valid Email Address");
+                return ("badRequest", "Please enter a valid Email Address");
             }
 
             User userDetails = await _userRepository.GetUserByEmailAsync(userForLogin.Email);
@@ -196,10 +196,21 @@ namespace LibrarySystem.Web.API.Services.Infrastructure
 
             if (userForConfirmation == null)
             {
-                return (false, "This email is not registered");
+                return ("unauthorized", "This email is not registered");
             }
 
-            return (true, null);
+            byte[] passwordHash = GetPasswordHash(userForLogin.Password, userForConfirmation.PasswordSalt);
+
+            for (int index = 0; index < passwordHash.Length; index++)
+            {
+                if (passwordHash[index] != userForConfirmation.PasswordHash[index])
+                {
+                    return ("unauthorized", "Incorrect password!" );
+                }
+            }
+
+
+            return (null, null);
         }
 
 

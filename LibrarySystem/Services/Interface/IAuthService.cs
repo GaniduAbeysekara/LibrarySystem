@@ -13,7 +13,7 @@ namespace LibrarySystem.Web.API.Services.Interface
         public byte[] GetPasswordHash(string password, byte[] passwordSalt);
         public string CreateToken(string email, bool isAdmin);
         public Task<(bool, string)> ValidateUserForRegistrationAsync(UserForRegistrationDto userForRegistration);
-        public  Task<(bool, string)> ValidateUserForLoginAsync(UserForLoginDto userForLogin);
+        public Task<(string, string)> ValidateUserForLoginAsync(UserForLoginDto userForLogin);
         public (bool, string) ValidateUserForEdit(UserForEdit userForEdit);
         public (bool, object) ValidateUserForSearch(string? criteria);
         public Task<(bool, string)> ValidateUserForDeleteAsync(int id, HttpContext httpContext);

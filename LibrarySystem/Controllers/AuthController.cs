@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using AutoMapper.Internal;
 using LibrarySystem.Data.Entities;
 using LibrarySystem.Data.Repository.Interface;
 using LibrarySystem.Web.API.Model;
@@ -72,24 +73,15 @@ namespace LibrarySystem.Web.API.Controllers
         public async Task<IActionResult> LoginAsync(UserForLoginDto userForLogin)
         {
             var validationResult = await _authService.ValidateUserForLoginAsync(userForLogin);
-            if (!validationResult.Item1)
+            if (validationResult.Item1 == "badRequest")
             {
                 return new BadRequestObjectResult(new { status = "error", message = validationResult.Item2 });
             }
-
-            User userDetails = await _userRepository.GetUserByEmailAsync(userForLogin.Email);
-            Auth userForConfirmation = await _userRepository.GetAuthByEmailAsync(userForLogin.Email);
-
-            byte[] passwordHash = _authService.GetPasswordHash(userForLogin.Password, userForConfirmation.PasswordSalt);
-
-            for (int index = 0; index < passwordHash.Length; index++)
+            else if (validationResult.Item1 == "unauthorized")
             {
-                if (passwordHash[index] != userForConfirmation.PasswordHash[index])
-                {
-                    return StatusCode(401, new { status = "error", message = "Incorrect password!" });
-                }
+                return new UnauthorizedObjectResult(new { status = "error", message = validationResult.Item2 });
             }
-
+            User userDetails = await _userRepository.GetUserByEmailAsync(userForLogin.Email);
             return Ok(new
             {
                 status = "success",
@@ -110,7 +102,7 @@ namespace LibrarySystem.Web.API.Controllers
         }
 
 
-        [HttpPost("EditUser")]
+        [HttpPut("EditUser")]
         public async Task<IActionResult> EditUserAsync(UserForEdit userForEdit)
         {
 
