@@ -1,0 +1,262 @@
+﻿using AutoMapper;
+using AutoMapper.Internal;
+using LibrarySystem.Web.API.Helpers;
+using LibrarySystem.Data.Entities;
+using LibrarySystem.Data.Repository.Interface;
+using LibrarySystem.Web.API.Model;
+using LibrarySystem.Web.API.Services.Interface;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using System.Security.Cryptography;
+
+namespace LibrarySystem.Web.API.Controllers
+{
+    [Authorize]
+    [ApiController]
+    [Route("[controller]")]
+    public class AuthController : ControllerBase
+    {
+        private IUserRepository _userRepository;
+        private IAuthService _authService;
+        private IMapper _mapper;
+
+        public AuthController(IUserRepository userRepository, IConfiguration config, IAuthService authService)
+        {
+            _userRepository = userRepository;
+            _authService = authService;
+
+            _mapper = new Mapper(new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<UserForRegistrationDto, User>();
+            }));
+
+        }
+
+
+        [AllowAnonymous]
+        [HttpPost("Register")]
+        public async Task<IActionResult> RegisterAsync(UserForRegistrationDto userForRegistration)
+        {
+            var validationResult = await _authService.ValidateUserForRegistrationAsync(userForRegistration);
+            if (!validationResult.Item1)
+            {
+                return new BadRequestObjectResult(new { status = "error", message = validationResult.Item2 });
+            }
+
+            byte[] passwordSalt = new byte[128 / 8];
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                rng.GetNonZeroBytes(passwordSalt);
+            }
+            byte[] passwordHash = _authService.GetPasswordHash(userForRegistration.Password, passwordSalt);
+
+            Auth auth = new Auth
+            {
+                PasswordHash = passwordHash,
+                PasswordSalt = passwordSalt,
+                Email = userForRegistration.Email.ToLower()
+            };
+            User userDb = _mapper.Map<User>(userForRegistration);
+
+            await _userRepository.AddEntityAsync<Auth>(auth);
+            await _userRepository.AddEntityAsync<User>(userDb);
+
+            if (await _userRepository.SaveChangersAsync())
+            {
+                return StatusCode(201, new { status = "success", message = ResponseMessagesHelper.UserCreatedSuccess, userDb });
+            }
+            return StatusCode(500, new { status = "error", message = ResponseMessagesHelper.UserRegistrationFailed });
+        }
+
+
+        [AllowAnonymous]
+        [HttpPost("Login")]
+        public async Task<IActionResult> LoginAsync(UserForLoginDto userForLogin)
+        {
+            var validationResult = await _authService.ValidateUserForLoginAsync(userForLogin);
+            if (validationResult.Item1 == "badRequest")
+            {
+                return new BadRequestObjectResult(new { status = "error", message = validationResult.Item2 });
+            }
+            else if (validationResult.Item1 == "unauthorized")
+            {
+                return new UnauthorizedObjectResult(new { status = "error", message = validationResult.Item2 });
+            }
+            User userDetails = await _userRepository.GetUserByEmailAsync(userForLogin.Email);
+            return Ok(new
+            {
+                status = "success",
+                message = ResponseMessagesHelper.LoggedInSuccessfully,
+                token = _authService.CreateToken(userForLogin.Email, userDetails.IsAdmin)
+            });
+        }
+
+
+        [HttpGet("GetLoggedInUserDetails")]
+        public async Task<IActionResult> GetLoggedInUserDetailsAsync()
+        {
+            var email = await _authService.GetEmailFromAccessTokenAsync(HttpContext);
+            var userDb = await _userRepository.GetUserByEmailAsync(email);
+
+            return Ok(userDb);
+
+        }
+
+
+        [HttpPut("EditUser")]
+        public async Task<IActionResult> EditUserAsync(UserForEdit userForEdit)
+        {
+
+            var validationResult = _authService.ValidateUserForEdit(userForEdit);
+            if (!validationResult.Item1)
+            {
+                return new BadRequestObjectResult(new { status = "error", message = validationResult.Item2 });
+            }
+            var email = await _authService.GetEmailFromAccessTokenAsync(HttpContext);
+            if (string.IsNullOrEmpty(email))
+            {
+                return Unauthorized(new { status = "error", message = ResponseMessagesHelper.InvalidToken });
+            }
+
+            var userDb = await _userRepository.GetUserByEmailAsync(email);
+            if (userDb == null)
+            {
+                return NotFound(new { status = "error", message = ResponseMessagesHelper.UserNotExist });
+            }
+
+            // List to track updated fields
+            var updatedFields = new List<string>();
+
+            if (userDb.FirstName != userForEdit.FirstName)
+            {
+                userDb.FirstName = userForEdit.FirstName;
+                updatedFields.Add(nameof(userDb.FirstName));
+            }
+
+            if (userDb.LastName != userForEdit.LastName)
+            {
+                userDb.LastName = userForEdit.LastName;
+                updatedFields.Add(nameof(userDb.LastName));
+            }
+
+            if (userDb.PhoneNumber != userForEdit.PhoneNumber)
+            {
+                userDb.PhoneNumber = userForEdit.PhoneNumber;
+                updatedFields.Add(nameof(userDb.PhoneNumber));
+            }
+
+            if (userDb.Gender != userForEdit.Gender)
+            {
+                userDb.Gender = userForEdit.Gender;
+                updatedFields.Add(nameof(userDb.Gender));
+            }
+
+            var responseMessage = updatedFields.Count > 0 ? $"Updated fields: {string.Join(", ", updatedFields)}"
+                                                          : ResponseMessagesHelper.NoFieldsUpdated;
+
+            if (await _userRepository.SaveChangersAsync())
+            {
+                return Ok(new { status = "success", message = responseMessage, userForEdit });
+            }
+            return BadRequest(new { status = "error", message = responseMessage });
+        }
+
+
+
+        [HttpDelete("DeleteUser")]
+        public async Task<IActionResult> DeleteUserAsync(int id)
+        {
+            var userStatus = await _authService.GetUserStatusFromTokenAsync(HttpContext);
+
+            if (!userStatus)
+            {
+                return StatusCode(403, new { status = "forbidden", message = ResponseMessagesHelper.ForbiddenDelete });
+            }
+
+            var validationResult = await _authService.ValidateUserForDeleteAsync(id, HttpContext);
+            if (!validationResult.Item1)
+            {
+                return new BadRequestObjectResult(new { status = "error", message = validationResult.Item2 });
+            }
+
+            var userDb = await _userRepository.GetUserByIdAsync(id);
+            var authDb = await _userRepository.GetAuthByEmailAsync(userDb.Email);
+
+            await _userRepository.RemoveEntityAsync<User>(userDb);
+            await _userRepository.RemoveEntityAsync<Auth>(authDb);
+            if (await _userRepository.SaveChangersAsync())
+            {
+                return Ok(new { status = "success", message = "User " + id + " deleted successfully." });
+            }
+
+            return BadRequest(new { status = "error", message = ResponseMessagesHelper.UserNotRegistered });
+
+        }
+
+
+
+
+        // search Users by Email, First name, Last Name, Phone Number,Gender
+        [HttpGet("GetUsers")]
+        public async Task<IActionResult> Search([FromQuery] string? criteria)
+        {
+            var userStatus = await _authService.GetUserStatusFromTokenAsync(HttpContext);
+            var email = await _authService.GetEmailFromAccessTokenAsync(HttpContext);
+
+            if (!userStatus)
+            {
+                return StatusCode(403, new { status = "forbidden", message = ResponseMessagesHelper.ForbiddenAccess });
+            }
+            try
+            {
+                if (string.IsNullOrEmpty(criteria))
+                {
+                    var allUsers = await _userRepository.GetAllUsersAsync(email);
+                    if (allUsers == null || !allUsers.Any())
+                    {
+                        return Ok(new { status = "success", message = ResponseMessagesHelper.NoUsersAvailable });
+                    }
+                    return Ok(allUsers);
+                }
+
+                var validationResult = _authService.ValidateUserForSearch(criteria);
+                if (!validationResult.Item1)
+                {
+                    return new BadRequestObjectResult(new { status = "error", message = validationResult.Item2 });
+                }
+
+                User searchCriteria = (User)validationResult.Item2;
+                // Perform the search
+                var SearchUsers = _userRepository.SearchUsersSpefically(searchCriteria, email);
+
+                if (!SearchUsers.Any())
+                {
+                    return Ok(new { status = "error", message = ResponseMessagesHelper.NoUserFound });
+                }
+                return Ok(SearchUsers);
+
+            }
+            catch (Exception ex)
+            {
+                // Log exception (ex) here if needed
+                return StatusCode(500, new { status = "error", message = ResponseMessagesHelper.InternalServerError });
+            }
+        }
+
+        [HttpPost("logout")]
+        public async Task<IActionResult> LogoutAsync()
+        {
+            var token = Request.Headers["Authorization"].ToString().Replace("Bearer ", string.Empty);
+            if (string.IsNullOrEmpty(token))
+            {
+                return BadRequest(new { status = "error", message = ResponseMessagesHelper.TokenRequired });
+            }
+
+            await _authService.RevokeTokenAsync(token);
+
+            var emailFromToken = await _authService.GetEmailFromAccessTokenAsync(HttpContext);
+            return Ok(new { status = "success", message = $"{emailFromToken} ",ResponseMessagesHelper.LoggedOutSuccessfully});
+        }
+
+    }
+}
